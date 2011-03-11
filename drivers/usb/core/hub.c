@@ -3122,6 +3122,14 @@ static void hub_port_connect_change(struct usb_hub *hub, int port1,
 		status = hub_power_remaining(hub);
 		if (status)
 			dev_dbg(hub_dev, "%dmA power budget left\n", status);
+#ifdef CONFIG_USB_HUB_ENHANCEMENT
+		else if (status < 0) {
+			dev_err(&udev->dev,
+				"doesn't have enough power to connect this port\n");
+			status = -ENOTCONN;	/* Don't retry */
+			goto loop_disable;
+		}
+#endif
 
 		return;
 

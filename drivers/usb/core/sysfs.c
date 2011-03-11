@@ -518,6 +518,36 @@ static ssize_t usb_dev_authorized_store(struct device *dev,
 static DEVICE_ATTR(authorized, 0644,
 	    usb_dev_authorized_show, usb_dev_authorized_store);
 
+#if defined(CONFIG_USB_HUB_ENHANCEMENT)
+void usb_hub_pwr_err_uevent(struct usb_device *udev)
+{
+	struct kobject *kobj = &(&udev->dev)->kobj;
+	char *envp[2] = {"HUB_PWR_ERR=1", 0};
+	kobject_uevent_env(kobj, KOBJ_CHANGE, envp);
+}
+
+static ssize_t
+show_hub_pwr_err(struct device *dev, struct device_attribute *attr, char *buf)
+{
+	struct usb_device *udev = to_usb_device(dev);
+
+	return sprintf(buf, "%d\n", udev->hub_pwr_err);
+}
+
+static ssize_t
+set_hub_pwr_err(struct device *dev, struct device_attribute *attr,
+		const char *buf, size_t count)
+{
+	struct usb_device *udev = to_usb_device(dev);
+
+	if (udev->hub_pwr_err)
+		usb_hub_pwr_err_uevent(udev);
+
+	return count;
+}
+
+static DEVICE_ATTR(hub_pwr_err, S_IRUGO | S_IWUSR, show_hub_pwr_err, set_hub_pwr_err);
+#endif
 
 static struct attribute *dev_attrs[] = {
 	/* current configuration's attributes */
@@ -543,6 +573,9 @@ static struct attribute *dev_attrs[] = {
 	&dev_attr_maxchild.attr,
 	&dev_attr_quirks.attr,
 	&dev_attr_authorized.attr,
+#if defined(CONFIG_USB_HUB_ENHANCEMENT)
+	&dev_attr_hub_pwr_err.attr,
+#endif
 	NULL,
 };
 static struct attribute_group dev_attr_grp = {

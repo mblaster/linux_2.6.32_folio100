@@ -292,6 +292,8 @@ void kernel_restart_prepare(char *cmd)
 	sysdev_shutdown();
 }
 
+//Daniel 20100820, add NvEcPowerState_Restart for Restart, ECI section 6.4. Sleep State Control.
+extern void nvec_set_reboot_flag(unsigned int type);
 /**
  *	kernel_restart - reboot the system
  *	@cmd: pointer to buffer containing command to execute for restart
@@ -302,11 +304,20 @@ void kernel_restart_prepare(char *cmd)
  */
 void kernel_restart(char *cmd)
 {
+	//Daniel 20100903, if cmd="recovery", reboot to OTA mode.
+	if(!cmd)
+		nvec_set_reboot_flag(1); //normal reboot
+	else if(strcmp(cmd, "recovery")==0)
+		nvec_set_reboot_flag(2); //reboot to OTA mode
+	else
+		nvec_set_reboot_flag(1); //normal reboot
+		
 	kernel_restart_prepare(cmd);
 	if (!cmd)
 		printk(KERN_EMERG "Restarting system.\n");
 	else
 		printk(KERN_EMERG "Restarting system with command '%s'.\n", cmd);
+	while(1);
 	machine_restart(cmd);
 }
 EXPORT_SYMBOL_GPL(kernel_restart);
@@ -346,6 +357,7 @@ void kernel_power_off(void)
 	disable_nonboot_cpus();
 	sysdev_shutdown();
 	printk(KERN_EMERG "Power down.\n");
+	while(1);
 	machine_power_off();
 }
 EXPORT_SYMBOL_GPL(kernel_power_off);

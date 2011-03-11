@@ -318,6 +318,85 @@ int add_uevent_var(struct kobj_uevent_env *env, const char *format, ...)
 }
 EXPORT_SYMBOL_GPL(add_uevent_var);
 
+#if defined(CONFIG_TEGRA_ODM_USB_HUB_INTR)	
+int send_usb_hub_uevent_sock(void)
+{
+	struct kobj_uevent_env *env;
+	const char *action_string = "add";
+	const char *devpath = "/devices/platform/tegra-ehci.2/usb2/2-1/2-1.2/input/input9/event9";
+	const char *subsystem = "usbHubInterrupt";
+	const char *devname = "input/event9";
+	int retval = 0;
+	int i = 0;
+	u64 seq;
+
+	/* environment buffer */
+	env = kzalloc(sizeof(struct kobj_uevent_env), GFP_KERNEL);
+	if (!env)
+		return -ENOMEM;
+
+	/* default keys */
+	retval = add_uevent_var(env, "ACTION=%s", action_string);
+	if (retval)
+		goto exit;
+	retval = add_uevent_var(env, "DEVPATH=%s", devpath);
+	if (retval)
+		goto exit;
+	retval = add_uevent_var(env, "SUBSYSTEM=%s", subsystem);
+	if (retval)
+		goto exit;
+	retval = add_uevent_var(env, "DEVNAME=%s", devname);
+	if (retval)
+		goto exit;
+
+	/* we will send an event, so request a new sequence number */
+	spin_lock(&sequence_lock);
+	seq = ++uevent_seqnum;
+	spin_unlock(&sequence_lock);
+	retval = add_uevent_var(env, "SEQNUM=%llu", (unsigned long long)seq);
+	if (retval)
+		goto exit;
+	
+#if defined(CONFIG_NET)
+	/* send netlink message */
+	if (uevent_sock) {
+		struct sk_buff *skb;
+		size_t len;
+
+		/* allocate message with the maximum possible size */
+		len = strlen(action_string) + strlen(devpath) + 2;
+		skb = alloc_skb(len + env->buflen, GFP_KERNEL);
+		if (skb) {
+			char *scratch;
+
+			/* add header */
+			scratch = skb_put(skb, len);
+			sprintf(scratch, "%s@%s", action_string, devpath);
+
+			/* copy keys to our continuous event payload buffer */
+			for (i = 0; i < env->envp_idx; i++) {
+				len = strlen(env->envp[i]) + 1;
+				scratch = skb_put(skb, len);
+				strcpy(scratch, env->envp[i]);
+			}
+
+			NETLINK_CB(skb).dst_group = 1;
+			retval = netlink_broadcast(uevent_sock, skb, 0, 1,
+						   GFP_KERNEL);
+			/* ENOBUFS should be handled in userspace */
+			if (retval == -ENOBUFS)
+				retval = 0;
+		} else
+			retval = -ENOMEM;
+	}
+#endif
+exit:
+	kfree(env);
+	return retval;
+}
+EXPORT_SYMBOL_GPL(send_usb_hub_uevent_sock);
+#endif
+
 #if defined(CONFIG_NET)
 static int __init kobject_uevent_init(void)
 {

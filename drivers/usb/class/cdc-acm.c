@@ -1592,8 +1592,15 @@ static int __init acm_init(void)
 	acm_tty_driver->subtype = SERIAL_TYPE_NORMAL,
 	acm_tty_driver->flags = TTY_DRIVER_REAL_RAW | TTY_DRIVER_DYNAMIC_DEV;
 	acm_tty_driver->init_termios = tty_std_termios;
+#if 1
+	acm_tty_driver->init_termios.c_cflag = B115200 | CS8 | CREAD | HUPCL | CLOCAL;
+	acm_tty_driver->init_termios.c_iflag = IGNBRK;
+	acm_tty_driver->init_termios.c_oflag = 0;
+	acm_tty_driver->init_termios.c_lflag = 0;
+#else
 	acm_tty_driver->init_termios.c_cflag = B9600 | CS8 | CREAD |
 								HUPCL | CLOCAL;
+#endif
 	tty_set_operations(acm_tty_driver, &acm_ops);
 
 	retval = tty_register_driver(acm_tty_driver);

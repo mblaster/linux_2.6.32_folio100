@@ -522,6 +522,9 @@ struct usb_device {
 #endif
 	struct wusb_dev *wusb_dev;
 	int slot_id;
+#if defined(CONFIG_USB_HUB_ENHANCEMENT)
+	int hub_pwr_err;
+#endif
 };
 #define	to_usb_device(d) container_of(d, struct usb_device, dev)
 

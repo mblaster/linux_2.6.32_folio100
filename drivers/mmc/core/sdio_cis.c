@@ -23,6 +23,14 @@
 #include "sdio_cis.h"
 #include "sdio_ops.h"
 
+/* ATHENV */
+//#include <linux/dma-mapping.h>
+//#include <linux/earlysuspend.h>
+//#include <mach/dma.h>
+#define ATHR_MANUF_CODE                 0x271
+#define ATHR_MANUF_ID                   0x301
+/* ATHENV */
+
 static int cistpl_vers_1(struct mmc_card *card, struct sdio_func *func,
 			 const unsigned char *buf, unsigned size)
 {
@@ -325,7 +333,30 @@ static int sdio_read_cis(struct mmc_card *card, struct sdio_func *func)
 
 int sdio_read_common_cis(struct mmc_card *card)
 {
+/* ATHENV */
+#if 0
 	return sdio_read_cis(card, NULL);
+#else
+
+	int ret;
+
+	printk(" *** %s: +\n", __func__);
+	ret = sdio_read_cis(card, NULL);
+
+	/* Atheros case? */
+        if (card->cis.vendor == ATHR_MANUF_CODE) {
+		printk(" *** %s: Atheros case\n", __func__);
+		if (card && card->host) {
+			printk(" *** %s: disable MMC_CAP_NEEDS_POLL\n", __func__);
+			card->host->caps &= ~MMC_CAP_NEEDS_POLL;
+			card->host->skip_detect = 1;
+			printk(" *** %s: caps=[0x%x], MMC_CAP_NEEDS_POLL=[0x%x], skip_detect=[0x%x]\n", __func__, card->host->caps, MMC_CAP_NEEDS_POLL, card->host->skip_detect);
+		}
+	}
+	printk(" *** %s: -\n", __func__);
+	return ret;
+#endif
+/* ATHENV */
 }
 
 void sdio_free_common_cis(struct mmc_card *card)

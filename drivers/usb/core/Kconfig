@@ -140,3 +140,11 @@ config USB_OTG_BLACKLIST_HUB
 	  and software costs by not supporting external hubs.  So
 	  are "Embedded Hosts" that don't offer OTG support.
 
+config USB_HUB_ENHANCEMENT
+	bool "USB Hub power management enhancement"
+	depends on USB
+	---help---
+	  If you say Y here, uevent will occur when the power is not enough
+	  to configure the connected device.
+	  Event type: ACTION=change, SUBSYSTEM=usb, HUB_PWR_ERR=1
+

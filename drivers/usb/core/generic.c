@@ -98,6 +98,9 @@ int usb_choose_configuration(struct usb_device *udev)
 
 		/* Rule out configs that draw too much bus current */
 		if (c->desc.bMaxPower * 2 > udev->bus_mA) {
+#if defined(CONFIG_USB_HUB_ENHANCEMENT)
+			dev_warn (&udev->dev, "A device requests %dmA but bus power is %dmA\n", c->desc.bMaxPower * 2, udev->bus_mA);
+#endif
 			insufficient_power++;
 			continue;
 		}
@@ -132,10 +135,16 @@ int usb_choose_configuration(struct usb_device *udev)
 			best = c;
 	}
 
-	if (insufficient_power > 0)
+	if (insufficient_power > 0) {
+#if defined(CONFIG_USB_HUB_ENHANCEMENT)
+		extern void usb_hub_pwr_err_uevent(struct usb_device *udev);
+		udev->hub_pwr_err = 1;
+		usb_hub_pwr_err_uevent(udev);
+#endif
 		dev_info(&udev->dev, "rejected %d configuration%s "
 			"due to insufficient available bus power\n",
 			insufficient_power, plural(insufficient_power));
+	}
 
 	if (best) {
 		i = best->desc.bConfigurationValue;

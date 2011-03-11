@@ -103,6 +103,7 @@ extern struct kobject *kobject_get(struct kobject *kobj);
 extern void kobject_put(struct kobject *kobj);
 
 extern char *kobject_get_path(struct kobject *kobj, gfp_t flag);
+extern int send_usb_hub_uevent_sock(void);
 
 struct kobj_type {
 	void (*release)(struct kobject *kobj);

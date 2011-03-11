@@ -151,4 +151,12 @@ config SYS_HYPERVISOR
 	bool
 	default n
 
+config TEGRA_TMON_PROC
+        bool "PROC of TEGRA's temperature support"
+        help
+          PROC of TEGRA's temperature support is useful to transfer temperature value
+          by PROC to user space.
+
+          If you want TEGRA_TMON_PROC support, you should say Y here.
+
 endmenu

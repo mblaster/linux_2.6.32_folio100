@@ -86,7 +86,8 @@ static int mmc_decode_cid(struct mmc_card *card)
 	case 3: /* MMC v3.1 - v3.3 */
 	case 4: /* MMC v4 */
 		card->cid.manfid	= UNSTUFF_BITS(resp, 120, 8);
-		card->cid.oemid		= UNSTUFF_BITS(resp, 104, 16);
+		card->cid.cbx           = UNSTUFF_BITS(resp, 112, 2);
+		card->cid.oemid         = UNSTUFF_BITS(resp, 104, 8);
 		card->cid.prod_name[0]	= UNSTUFF_BITS(resp, 96, 8);
 		card->cid.prod_name[1]	= UNSTUFF_BITS(resp, 88, 8);
 		card->cid.prod_name[2]	= UNSTUFF_BITS(resp, 80, 8);
@@ -121,7 +122,7 @@ static int mmc_decode_csd(struct mmc_card *card)
 	 * v1.2 has extra information in bits 15, 11 and 10.
 	 */
 	csd_struct = UNSTUFF_BITS(resp, 126, 2);
-	if (csd_struct != 1 && csd_struct != 2) {
+	if (csd_struct != 1 && csd_struct != 2 && csd_struct != 3) {
 		printk(KERN_ERR "%s: unrecognised CSD structure version %d\n",
 			mmc_hostname(card->host), csd_struct);
 		return -EINVAL;
@@ -141,6 +142,11 @@ static int mmc_decode_csd(struct mmc_card *card)
 	e = UNSTUFF_BITS(resp, 47, 3);
 	m = UNSTUFF_BITS(resp, 62, 12);
 	csd->capacity	  = (1 + m) << (e + 2);
+#ifdef CONFIG_EMBEDDED_MMC_START_OFFSET
+	/* for sector-addressed cards, this will cause csd->capacity to wrap */
+	if (mmc_card_blockaddr(card))
+		csd->capacity -= card->host->ops->get_host_offset(card->host);
+#endif
 
 	csd->read_blkbits = UNSTUFF_BITS(resp, 80, 4);
 	csd->read_partial = UNSTUFF_BITS(resp, 79, 1);
@@ -160,6 +166,7 @@ static int mmc_read_ext_csd(struct mmc_card *card)
 {
 	int err;
 	u8 *ext_csd;
+	unsigned offs;
 
 	BUG_ON(!card);
 
@@ -207,7 +214,7 @@ static int mmc_read_ext_csd(struct mmc_card *card)
 	}
 
 	card->ext_csd.rev = ext_csd[EXT_CSD_REV];
-	if (card->ext_csd.rev > 3) {
+	if (card->ext_csd.rev > 5) {
 		printk(KERN_ERR "%s: unrecognised EXT_CSD structure "
 			"version %d\n", mmc_hostname(card->host),
 			card->ext_csd.rev);
@@ -221,8 +228,18 @@ static int mmc_read_ext_csd(struct mmc_card *card)
 			ext_csd[EXT_CSD_SEC_CNT + 1] << 8 |
 			ext_csd[EXT_CSD_SEC_CNT + 2] << 16 |
 			ext_csd[EXT_CSD_SEC_CNT + 3] << 24;
-		if (card->ext_csd.sectors)
-			mmc_card_set_blockaddr(card);
+		if (card->ext_csd.sectors) {
+#ifdef CONFIG_EMBEDDED_MMC_START_OFFSET
+			offs = card->host->ops->get_host_offset(card->host);
+			offs >>= 9;
+			BUG_ON(offs >= card->ext_csd.sectors);
+			card->ext_csd.sectors -= offs;
+#endif
+			offs = ext_csd[EXT_CSD_BOOT_SIZE_MULTI] * SZ_256K / 512;
+			card->ext_csd.sectors -= offs;
+
+		}
+
 	}
 
 	switch (ext_csd[EXT_CSD_CARD_TYPE]) {
@@ -306,6 +323,7 @@ static int mmc_init_card(struct mmc_host *host, u32 ocr,
 	int err;
 	u32 cid[4];
 	unsigned int max_dtr;
+	u32 rocr;
 
 	BUG_ON(!host);
 	WARN_ON(!host->claimed);
@@ -319,10 +337,9 @@ static int mmc_init_card(struct mmc_host *host, u32 ocr,
 	mmc_go_idle(host);
 
 	/* The extra bit indicates that we support high capacity */
-	err = mmc_send_op_cond(host, ocr | (1 << 30), NULL);
+	err = mmc_send_op_cond(host, ocr | (1 << 30), &rocr);
 	if (err)
 		goto err;
-
 	/*
 	 * For SPI, enable CRC as appropriate.
 	 */
@@ -362,6 +379,13 @@ static int mmc_init_card(struct mmc_host *host, u32 ocr,
 		card->type = MMC_TYPE_MMC;
 		card->rca = 1;
 		memcpy(card->raw_cid, cid, sizeof(card->raw_cid));
+		/*
+		 * Set addressing mode of the card based on
+		 * access mode bit in OCR register
+		 */
+		if (rocr & MMC_CARD_ACCESS_MODE)
+			mmc_card_set_blockaddr(card);
+		host->card = card;
 	}
 
 	/*
@@ -474,14 +498,13 @@ static int mmc_init_card(struct mmc_host *host, u32 ocr,
 		}
 	}
 
-	if (!oldcard)
-		host->card = card;
 
 	return 0;
 
 free_card:
 	if (!oldcard)
 		mmc_remove_card(card);
+	host->card = NULL;
 err:
 
 	return err;

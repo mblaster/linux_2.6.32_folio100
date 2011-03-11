@@ -120,6 +120,14 @@ config RWSEM_GENERIC_SPINLOCK
 config RWSEM_XCHGADD_ALGORITHM
 	bool
 
+config ARCH_HAS_CPU_IDLE_WAIT
+	bool
+	default y
+
+config ARCH_HAS_DEFAULT_IDLE
+	bool
+	default y
+
 config ARCH_HAS_ILOG2_U32
 	bool
 
@@ -158,6 +166,9 @@ config ARCH_MTD_XIP
 
 config GENERIC_HARDIRQS_NO__DO_IRQ
 	def_bool y
+
+config ARCH_PROVIDES_UDELAY
+  bool
 
 if OPROFILE
 
@@ -537,6 +548,20 @@ config ARCH_W90X900
 	  <http://www.nuvoton.com/hq/enu/ProductAndSales/ProductLines/
 		ConsumerElectronicsIC/ARMMicrocontroller/ARMMicrocontroller>
 
+config ARCH_TEGRA
+	bool "NVIDIA Tegra"
+	select GENERIC_TIME
+	select GENERIC_CLOCKEVENTS
+	select GENERIC_GPIO
+	select HAVE_CLK
+	select COMMON_CLKDEV
+	select ARCH_HAS_BARRIERS if CACHE_L2X0
+	select ARCH_PROVIDES_UDELAY
+	select ARCH_HAS_CPUFREQ
+	help
+	  This enables support for NVIDIA Tegra based systems (Tegra APX,
+	  Tegra 6xx and Tegra 2 series).
+
 config ARCH_PNX4008
 	bool "Philips Nexperia PNX4008 Mobile"
 	select CPU_ARM926T
@@ -779,6 +804,7 @@ source "arch/arm/mach-h720x/Kconfig"
 source "arch/arm/mach-versatile/Kconfig"
 
 source "arch/arm/mach-aaec2000/Kconfig"
+source "arch/arm/mach-tegra/Kconfig"
 
 source "arch/arm/mach-realview/Kconfig"
 
@@ -837,6 +863,19 @@ if !MMU
 source "arch/arm/Kconfig-nommu"
 endif
 
+config TEGRA_ERRATA_657451
+	bool "Store bit 20 of CP15 TLS register c13,3 in bit 0"
+	depends on ARCH_TEGRA_2x_SOC && HAS_TLS_REG
+	default y
+	help
+	  This option enables a workaround for the 657451 Tegra 2 errata
+	  which causes unreliable reads from bit 20 of the thread storage
+	  register c13, 3 (used by the __set_tls system call). It stores the
+	  value intended for bit 20 into bit 0 instead; in most user-space
+	  environments, the value saved by __set_tls is an aligned address,
+	  so repurposing bit 0 will not cause ill effects.
+
+
 config ARM_ERRATA_411920
 	bool "ARM errata: Invalidation of the Instruction Cache operation can fail"
 	depends on CPU_V6 && !SMP
@@ -887,6 +926,19 @@ config ARM_ERRATA_460075
 	  ACTLR register. Note that setting specific bits in the ACTLR register
 	  may not be available in non-secure mode.
 
+config PL310_ERRATA_588369
+	bool "Clean & Invalidate maintenance operations do not invalidate clean lines"
+	depends on CACHE_L2X0 && ARCH_OMAP4
+	help
+	   The PL310 L2 cache controller implements three types of Clean &
+	   Invalidate maintenance operations: by Physical Address
+	   (offset 0x7F0), by Index/Way (0x7F8) and by Way (0x7FC).
+	   They are architecturally defined to behave as the execution of a
+	   clean operation followed immediately by an invalidate operation,
+	   both performing to the same memory location. This functionality
+	   is not correctly implemented in PL310 as clean lines are not
+	   invalidated as a result of these operations. Note that this errata
+	   uses Texas Instrument's secure monitor api.
 endmenu
 
 source "arch/arm/common/Kconfig"
@@ -955,10 +1007,11 @@ source "kernel/time/Kconfig"
 config SMP
 	bool "Symmetric Multi-Processing (EXPERIMENTAL)"
 	depends on EXPERIMENTAL && (REALVIEW_EB_ARM11MP || REALVIEW_EB_A9MP ||\
-		 MACH_REALVIEW_PB11MP || MACH_REALVIEW_PBX || ARCH_OMAP4)
+		 MACH_REALVIEW_PB11MP || MACH_REALVIEW_PBX || ARCH_OMAP4 || \
+		 ARCH_TEGRA)
 	depends on GENERIC_CLOCKEVENTS
 	select USE_GENERIC_SMP_HELPERS
-	select HAVE_ARM_SCU if (ARCH_REALVIEW || ARCH_OMAP4)
+	select HAVE_ARM_SCU if (ARCH_REALVIEW || ARCH_OMAP4 || ARCH_TEGRA)
 	help
 	  This enables support for systems with more than one CPU. If you have
 	  a system with only one CPU, like most personal computers, say N. If
@@ -985,6 +1038,13 @@ config HAVE_ARM_SCU
 config HAVE_ARM_TWD
 	bool
 	depends on SMP
+	help
+	  This options enables support for the ARM timer and watchdog unit
+
+config USE_ARM_TWD_PRESCALER
+	bool
+	depends on HAVE_ARM_TWD
+	default y if (CPU_FREQ || ARCH_TEGRA)
 	help
 	  This options enables support for the ARM timer and watchdog unit
 
@@ -1027,9 +1087,10 @@ config HOTPLUG_CPU
 config LOCAL_TIMERS
 	bool "Use local timer interrupts"
 	depends on SMP && (REALVIEW_EB_ARM11MP || MACH_REALVIEW_PB11MP || \
-		REALVIEW_EB_A9MP || MACH_REALVIEW_PBX || ARCH_OMAP4)
+		REALVIEW_EB_A9MP || MACH_REALVIEW_PBX || ARCH_OMAP4 || \
+		ARCH_TEGRA)
 	default y
-	select HAVE_ARM_TWD if (ARCH_REALVIEW || ARCH_OMAP4)
+	select HAVE_ARM_TWD if (ARCH_REALVIEW || ARCH_OMAP4 || ARCH_TEGRA)
 	help
 	  Enable support for local timers on SMP platforms, rather then the
 	  legacy IPI broadcast method.  Local timers allows the system

@@ -901,6 +901,59 @@ failed:
 	return err;
 }
 
+#if 1
+/// Abon [START] - Add: For HID suspend/resume issue (201009081645)
+int hidp_del_all_connection(void)
+{
+	struct hidp_session *session;
+	struct hidp_conndel_req req;
+        int err = 0;
+        struct list_head *p;
+
+        BT_DBG("");
+
+        down_read(&hidp_session_sem);
+
+	/// Abon - Change: For test from resume, HID device crash (201009081948)
+        //req.flags = (1 << HIDP_VIRTUAL_CABLE_UNPLUG);
+        req.flags = 0;
+
+        list_for_each(p, &hidp_session_list) {
+                struct hidp_session *session;
+                struct hidp_conninfo ci;
+
+                session = list_entry(p, struct hidp_session, list);
+                __hidp_copy_session(session, &ci);
+                bacpy(&(req.bdaddr), &(ci.bdaddr));
+
+                if (session) {
+                        if (req.flags & (1 << HIDP_VIRTUAL_CABLE_UNPLUG)) {
+                                hidp_send_ctrl_message(session,
+                                                HIDP_TRANS_HID_CONTROL | HIDP_CTRL_VIRTUAL_CABLE_UNPLUG, NULL, 0);
+                        } else {
+                                /* Flush the transmit queues */
+                                skb_queue_purge(&session->ctrl_transmit);
+                                skb_queue_purge(&session->intr_transmit);
+
+                                /* Wakeup user-space polling for socket errors */
+                                session->intr_sock->sk->sk_err = EUNATCH;
+                                session->ctrl_sock->sk->sk_err = EUNATCH;
+
+                                /* Kill session thread */
+                                atomic_inc(&session->terminate);
+                                hidp_schedule(session);
+                        }
+                } else
+			err = -ENOENT; 
+	}
+        up_read(&hidp_session_sem);
+        return err;
+}
+
+EXPORT_SYMBOL(hidp_del_all_connection);
+/// Abon [END] - Add: For HID suspend/resume issue (201009081645)
+#endif
+
 int hidp_del_connection(struct hidp_conndel_req *req)
 {
 	struct hidp_session *session;
