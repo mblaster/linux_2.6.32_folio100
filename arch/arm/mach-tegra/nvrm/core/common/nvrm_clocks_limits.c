@@ -237,9 +237,10 @@ NvRmPrivClockLimitsInit(NvRmDeviceHandle hRmDevice)
 
     // Set upper clock boundaries for devices on CPU bus (CPU, Mselect,
     // CMC) with combined Absolute/Scaled limits
-    CpuMaxKHz = pSKUedLimits->CpuMaxKHz;
-    CpuMaxKHz = NV_MIN(
-        CpuMaxKHz, s_ClockRangeLimits[NvRmModuleID_Cpu].MaxKHz);
+    //CpuMaxKHz = pSKUedLimits->CpuMaxKHz;
+    //CpuMaxKHz = NV_MIN(
+    //    CpuMaxKHz, s_ClockRangeLimits[NvRmModuleID_Cpu].MaxKHz);
+	CpuMaxKHz = 1400000;
     s_ClockRangeLimits[NvRmModuleID_Cpu].MaxKHz = CpuMaxKHz;
     if ((hRmDevice->ChipId.Id == 0x15) || (hRmDevice->ChipId.Id == 0x16))
     {
