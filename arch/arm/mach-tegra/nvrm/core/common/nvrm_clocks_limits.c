@@ -52,8 +52,38 @@
 #define USE_FAKE_SHMOO
 
 #ifdef USE_FAKE_SHMOO
-NvU32 FakeShmooVoltages[7];
-NvRmScaledClkLimits FakepScaledCpuLimits;
+
+#define MAX_OVERCLOCK (1504000)
+#define MAX_VOLTAGE (1150)
+
+// Voltage list for corresponding clocks
+NvU32 FakeShmooVoltages[] = {
+    750,
+    825,
+    900,
+    975,
+    1050,
+    1100,
+    MAX_VOLTAGE // New Entry
+};
+
+NvU32 ClockTableLength = 7; // Original Value: 6
+
+NvRmScaledClkLimits FakepScaledCpuLimits = {
+    101, // FakepScaledCpuLimits.HwDeviceId
+    0, // FakepScaledCpuLimits.SubClockId
+    32, // FakepScaledCpuLimits.MinKHz
+    // Clock table
+    {314000,
+    456000,
+    618000,
+    770000,
+    922000,
+    1007000,
+    MAX_OVERCLOCK, // New Entry
+    }
+};
+
 #endif
 
 // Extended clock limits IDs
@@ -240,7 +270,7 @@ NvRmPrivClockLimitsInit(NvRmDeviceHandle hRmDevice)
     //CpuMaxKHz = pSKUedLimits->CpuMaxKHz;
     //CpuMaxKHz = NV_MIN(
     //    CpuMaxKHz, s_ClockRangeLimits[NvRmModuleID_Cpu].MaxKHz);
-	CpuMaxKHz = 1400000;
+	CpuMaxKHz = MAX_OVERCLOCK;
     s_ClockRangeLimits[NvRmModuleID_Cpu].MaxKHz = CpuMaxKHz;
     if ((hRmDevice->ChipId.Id == 0x15) || (hRmDevice->ChipId.Id == 0x16))
     {
@@ -770,9 +800,6 @@ static NvError NvRmBootArgChipShmooGet(
     NvRmMemHandle hMem = NULL;
     NvError err = NvSuccess;
     ExecPlatform env;
-#ifdef USE_FAKE_SHMOO
-    int FakeShmooCounter = 0;
-#endif
 
     // Retrieve shmoo data
     err = NvOsBootArgGet(NvBootArgKey_ChipShmoo, &BootArgSh, sizeof(BootArgSh));
@@ -909,13 +936,6 @@ static NvError NvRmBootArgChipShmooGet(
         size = BootArgSh.CpuShmooVoltagesListSize;
         NV_ASSERT (offset + size <= TotalSize);
 #ifdef USE_FAKE_SHMOO
-        for(FakeShmooCounter=0; FakeShmooCounter<6; FakeShmooCounter++)
-        {
-            FakeShmooVoltages[FakeShmooCounter] =
-                *(const NvU32*)((NvUPtr)s_pShmooData + offset + (FakeShmooCounter * 4));
-            printk(KERN_DEBUG "Shmoo: FakeShmooVoltages[%d] = %d\n",FakeShmooCounter, FakeShmooVoltages[FakeShmooCounter]);
-        }
-        // AT FIRST DONT CHANGE ANYTHING
         s_CpuShmoo.ShmooVoltages = &FakeShmooVoltages[0];
 #else
         s_CpuShmoo.ShmooVoltages =(const NvU32*)((NvUPtr)s_pShmooData + offset);
@@ -923,27 +943,17 @@ static NvError NvRmBootArgChipShmooGet(
         size /= sizeof(*s_CpuShmoo.ShmooVoltages);
         NV_ASSERT((size * sizeof(*s_CpuShmoo.ShmooVoltages) ==
               BootArgSh.CpuShmooVoltagesListSize) && (size > 1));
+#ifdef USE_FAKE_SHMOO
+        s_CpuShmoo.ShmooVmaxIndex = ClockTableLength;
+#else
         s_CpuShmoo.ShmooVmaxIndex = size - 1;
+#endif
         printk(KERN_DEBUG "Shmoo: s_CpuShmoo.ShmooVmaxIndex = %d\n", s_CpuShmoo.ShmooVmaxIndex);
 
         offset = BootArgSh.CpuScaledLimitsOffset;
         size = BootArgSh.CpuScaledLimitsSize;
         NV_ASSERT (offset + size <= TotalSize);
 #ifdef USE_FAKE_SHMOO
-        FakepScaledCpuLimits.HwDeviceId = *(const NvU32*)((NvUPtr)s_pShmooData + offset);
-        printk(KERN_DEBUG "Shmoo: FakepScaledCpuLimits.HwDeviceId = %d\n", FakepScaledCpuLimits.HwDeviceId);
-        FakepScaledCpuLimits.SubClockId = *(const NvU32*)((NvUPtr)s_pShmooData + offset + 4);
-        printk(KERN_DEBUG "Shmoo: FakepScaledCpuLimits.SubClockId = %d\n", FakepScaledCpuLimits.SubClockId);
-        FakepScaledCpuLimits.MinKHz = *(const NvRmFreqKHz*)((NvUPtr)s_pShmooData + offset + 8);
-        printk(KERN_DEBUG "Shmoo: FakepScaledCpuLimits.MinKHz = %d\n", FakepScaledCpuLimits.MinKHz);
-        for(FakeShmooCounter=0; FakeShmooCounter<6; FakeShmooCounter++)
-        {
-            FakepScaledCpuLimits.MaxKHzList[FakeShmooCounter] =
-                *(const NvRmFreqKHz*)((NvUPtr)s_pShmooData + offset + 12 + (FakeShmooCounter * 4));
-            printk(KERN_DEBUG "Shmoo: FakepScaledCpuLimits.MaxKHzList[%d] = %d\n",FakeShmooCounter, FakepScaledCpuLimits.MaxKHzList[FakeShmooCounter]);
-        }
-        FakepScaledCpuLimits.MaxKHzList[5] = 1400000;
-        // AT FIRST DONT CHANGE ANYTHING
         s_CpuShmoo.pScaledCpuLimits = &FakepScaledCpuLimits;
 #else
         s_CpuShmoo.pScaledCpuLimits =
