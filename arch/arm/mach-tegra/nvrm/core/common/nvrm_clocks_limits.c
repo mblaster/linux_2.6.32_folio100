@@ -28,7 +28,12 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  *
+ *
+ * FakeShmoo overclocking additions by Holger Gilbergs (holger.gilbergs@gmail.com)
+ *
  */
+
+#include <linux/kernel.h>
 
 #include "nvcommon.h"
 #include "nvrm_clocks.h"
@@ -44,6 +49,12 @@
 
 #define NvRmPrivGetStepMV(hRmDevice, step) \
          (s_ChipFlavor.pSocShmoo->ShmooVoltages[(step)])
+#define USE_FAKE_SHMOO
+
+#ifdef USE_FAKE_SHMOO
+NvU32 FakeShmooVoltages[7];
+NvRmScaledClkLimits FakepScaledCpuLimits;
+#endif
 
 // Extended clock limits IDs
 typedef enum
@@ -758,6 +769,9 @@ static NvError NvRmBootArgChipShmooGet(
     NvRmMemHandle hMem = NULL;
     NvError err = NvSuccess;
     ExecPlatform env;
+#ifdef USE_FAKE_SHMOO
+    int FakeShmooCounter = 0;
+#endif
 
     // Retrieve shmoo data
     err = NvOsBootArgGet(NvBootArgKey_ChipShmoo, &BootArgSh, sizeof(BootArgSh));
@@ -893,17 +907,47 @@ static NvError NvRmBootArgChipShmooGet(
         offset = BootArgSh.CpuShmooVoltagesListOffset;
         size = BootArgSh.CpuShmooVoltagesListSize;
         NV_ASSERT (offset + size <= TotalSize);
+#ifdef USE_FAKE_SHMOO
+        for(FakeShmooCounter=0; FakeShmooCounter<6; FakeShmooCounter++)
+        {
+            FakeShmooVoltages[FakeShmooCounter] =
+                *(const NvU32*)((NvUPtr)s_pShmooData + offset + (FakeShmooCounter * 4));
+            printk(KERN_DEBUG "Shmoo: FakeShmooVoltages[%d] = %d\n",FakeShmooCounter, FakeShmooVoltages[FakeShmooCounter]);
+        }
+        // AT FIRST DONT CHANGE ANYTHING
+        s_CpuShmoo.ShmooVoltages = &FakeShmooVoltages[0];
+#else
         s_CpuShmoo.ShmooVoltages =(const NvU32*)((NvUPtr)s_pShmooData + offset);
+#endif
         size /= sizeof(*s_CpuShmoo.ShmooVoltages);
         NV_ASSERT((size * sizeof(*s_CpuShmoo.ShmooVoltages) ==
               BootArgSh.CpuShmooVoltagesListSize) && (size > 1));
         s_CpuShmoo.ShmooVmaxIndex = size - 1;
+        printk(KERN_DEBUG "Shmoo: s_CpuShmoo.ShmooVmaxIndex = %d\n", s_CpuShmoo.ShmooVmaxIndex);
 
         offset = BootArgSh.CpuScaledLimitsOffset;
         size = BootArgSh.CpuScaledLimitsSize;
         NV_ASSERT (offset + size <= TotalSize);
+#ifdef USE_FAKE_SHMOO
+        FakepScaledCpuLimits.HwDeviceId = *(const NvU32*)((NvUPtr)s_pShmooData + offset);
+        printk(KERN_DEBUG "Shmoo: FakepScaledCpuLimits.HwDeviceId = %d\n", FakepScaledCpuLimits.HwDeviceId);
+        FakepScaledCpuLimits.SubClockId = *(const NvU32*)((NvUPtr)s_pShmooData + offset + 4);
+        printk(KERN_DEBUG "Shmoo: FakepScaledCpuLimits.SubClockId = %d\n", FakepScaledCpuLimits.SubClockId);
+        FakepScaledCpuLimits.MinKHz = *(const NvRmFreqKHz*)((NvUPtr)s_pShmooData + offset + 8);
+        printk(KERN_DEBUG "Shmoo: FakepScaledCpuLimits.MinKHz = %d\n", FakepScaledCpuLimits.MinKHz);
+        for(FakeShmooCounter=0; FakeShmooCounter<6; FakeShmooCounter++)
+        {
+            FakepScaledCpuLimits.MaxKHzList[FakeShmooCounter] =
+                *(const NvRmFreqKHz*)((NvUPtr)s_pShmooData + offset + 12 + (FakeShmooCounter * 4));
+            printk(KERN_DEBUG "Shmoo: FakepScaledCpuLimits.MaxKHzList[%d] = %d\n",FakeShmooCounter, FakepScaledCpuLimits.MaxKHzList[FakeShmooCounter]);
+        }
+        FakepScaledCpuLimits.MaxKHzList[5] = 1400000;
+        // AT FIRST DONT CHANGE ANYTHING
+        s_CpuShmoo.pScaledCpuLimits = &FakepScaledCpuLimits;
+#else
         s_CpuShmoo.pScaledCpuLimits =
             (const NvRmScaledClkLimits*)((NvUPtr)s_pShmooData + offset);
+#endif
         NV_ASSERT(size == sizeof(*s_CpuShmoo.pScaledCpuLimits));
     }
     else
