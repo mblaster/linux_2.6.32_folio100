@@ -59,7 +59,7 @@
 // Voltage list for corresponding clocks
 NvU32 FakeShmooVoltages[] = {
     900, // Original Value: 750
-    900, // Original Value: 750
+    900, // Original Value: 825
     900,
     975,
     1050,
