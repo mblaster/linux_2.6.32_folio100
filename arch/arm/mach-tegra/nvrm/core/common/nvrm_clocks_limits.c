@@ -54,12 +54,12 @@
 #ifdef USE_FAKE_SHMOO
 
 #define MAX_OVERCLOCK (1504000)
-#define MAX_VOLTAGE (1150)
+#define MAX_VOLTAGE (1250)
 
 // Voltage list for corresponding clocks
 NvU32 FakeShmooVoltages[] = {
-    750,
-    825,
+    900, // Original Value: 750
+    900, // Original Value: 750
     900,
     975,
     1050,

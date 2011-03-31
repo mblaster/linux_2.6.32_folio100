@@ -64,18 +64,17 @@ static int disable_hotplug = 0;
  * must be ascending.
  */
 static struct cpufreq_frequency_table freq_table[] = {
-	{ 0, 216000 },
-	{ 1, 312000 },
-	{ 2, 456000 },
-	{ 3, 608000 },
-	{ 4, 760000 },
-	{ 5, 816000 },
-	{ 6, 912000 },
-	{ 7, 1000000 },
-	{ 8, 1200000 },
-	{ 9, 1400000 },
-	{ 10, 1504000 },
-	{ 11, CPUFREQ_TABLE_END },
+	{ 0, 314000 },
+	{ 1, 456000 },
+	{ 2, 618000 },
+	{ 3, 770000 },
+	{ 4, 816000 },
+	{ 5, 922000 },
+	{ 6, 1000000 },
+	{ 7, 1200000 },
+	{ 8, 1400000 },
+	{ 9, 1504000 },
+	{ 10, CPUFREQ_TABLE_END },
 };
 
 static void tegra_cpufreq_hotplug(NvRmPmRequest req)
