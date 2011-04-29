@@ -38,3 +38,4 @@ obj-$(CONFIG_INPUT_TEGRA_ODM_EC_CIR)	+= tegra-nvec-cir.o
 obj-$(CONFIG_INPUT_TEGRA_ODM_ECOMPASS)	+= tegra_odm_ecompass.o
 obj-$(CONFIG_INPUT_TEGRA_ODM_DOCK)	+= tegra_odm_dock.o
 obj-$(CONFIG_INPUT_TEGRA_ODM_CAPSENSOR)	+= tegra_odm_capsensor.o
+obj-$(CONFIG_INPUT_TEGRA_ODM_OVCURRENT) += tegra_odm_ovcur.o

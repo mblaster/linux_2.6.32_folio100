@@ -1613,12 +1613,6 @@ static int _nvmap_handle_unpin(struct nvmap_handle *h)
 {
 	int ret = 0;
 
-	if(!h || !h->alloc ) {
-		WARN_ON(1);
-		pr_err("%s invalid handle, returning -EINVAL\n",__func__);
-		return -EINVAL;
-	}
-
 	if (atomic_add_return(0, &h->pin)==0) {
 		pr_err("%s: %s attempting to unpin an unpinned handle\n",
 			__func__, current->comm);
@@ -1665,11 +1659,6 @@ static int _nvmap_handle_pin_fast(unsigned int nr, struct nvmap_handle **h)
 {
 	unsigned int i;
 	int ret = 0;
-
-	if ( !(h && *h && ((*h)->alloc)) ) {
-		pr_err("%s invalid handle, returning -EINVAL\n",__func__);
-		return -EINVAL;
-	}
 
 	mutex_lock(&nvmap_pin_lock);
 	for (i=0; i<nr && !ret; i++) {
@@ -1751,11 +1740,6 @@ static int _nvmap_do_pin(struct nvmap_file_priv *priv,
 	unsigned int i;
 	struct nvmap_handle **h = (struct nvmap_handle **)refs;
 	struct nvmap_handle_ref *r;
-
-	if ((*h==NULL) || ( !(*h)->alloc )) {
-		pr_err("%s invalid handle, returning -EINVAL\n",__func__);
-		return -EINVAL;
-	}
 
 	/* to optimize for the common case (client provided valid handle
 	 * references and the pin succeeds), increment the handle_ref pin
@@ -2426,11 +2410,11 @@ static int _nvmap_do_alloc(struct nvmap_file_priv *priv,
 				NVMAP_TRACE(NVMAP_TRACE_LFB,
 					"nvmap: lfb after alloc %lu\n",
 					_nvmap_carveout_blockstat(
-						h->carveout.co_heap,
+						h->carveout.co_heap, 
 						CARVEOUT_STAT_LARGEST_FREE));
 
 				NVMAP_TRACE(NVMAP_TRACE_FREE_SIZE,
-					"nvmap: Free size after alloc %lu\n",
+					"nvmap: Free size after alloc %lu\n", 
 					_nvmap_carveout_blockstat(
 						h->carveout.co_heap,
 						CARVEOUT_STAT_FREE_SIZE));
@@ -3012,10 +2996,7 @@ static ssize_t _nvmap_do_rw_handle(struct nvmap_handle *h, int is_read,
 	void *addr = NULL;
 
 	h = _nvmap_handle_get(h);
-	if ((!h)  || ( !h->alloc )) {
-		pr_err("%s invalid handle, returning -EINVAL\n",__func__);
-		return -EINVAL;
-	}
+	if (!h) return -EINVAL;
 
 	if (elem_size == h_stride &&
 	    elem_size == sys_stride) {
@@ -3323,7 +3304,7 @@ static int __init nvmap_heap_arg(char *options)
 	size = memparse(p, &p);
 	if (*p == '@')
 		start = memparse(p + 1, &p);
-
+	
 	if (nvmap_carveout_cmds < ARRAY_SIZE(nvmap_carveout_cmd_size)) {
 		nvmap_carveout_cmd_base[nvmap_carveout_cmds] = start;
 		nvmap_carveout_cmd_size[nvmap_carveout_cmds] = size;
@@ -3569,12 +3550,6 @@ void NvRmMemPinMult(NvRmMemHandle *hMems, NvU32 *addrs, NvU32 Count)
 	struct nvmap_handle **h = (struct nvmap_handle **)hMems;
 	unsigned int i;
 	int ret;
-
-	if ( !(*h)->alloc ) {
-		pr_err("%s invalid handle\n",__func__);
-		*addrs=0;
-		return;
-	}
 
 	do {
 		ret = _nvmap_handle_pin_fast(Count, h);

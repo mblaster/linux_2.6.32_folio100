@@ -2161,6 +2161,9 @@ static int __init uvc_init(void)
 	INIT_LIST_HEAD(&uvc_driver.controls);
 	mutex_init(&uvc_driver.open_mutex);
 	mutex_init(&uvc_driver.ctrl_mutex);
+#if defined(CONFIG_TEGRA_ODM_BETELGEUSE)
+	mutex_init(&uvc_driver.camera_open_mutex);
+#endif
 
 	uvc_ctrl_init();
 
@@ -2174,6 +2177,12 @@ static void __exit uvc_cleanup(void)
 {
 	usb_deregister(&uvc_driver.driver);
 }
+
+#if defined(CONFIG_TEGRA_ODM_BETELGEUSE)
+extern struct mutex * get_camera_open_mutex(){
+   return (&uvc_driver.camera_open_mutex);
+}
+#endif
 
 module_init(uvc_init);
 module_exit(uvc_cleanup);

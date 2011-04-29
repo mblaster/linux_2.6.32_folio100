@@ -111,27 +111,18 @@ NvBool NvOdmKeyboardInit(void)
     NvStatus = NvEcSendRequest(s_NvEcHandle, &Request, &Response, sizeof(Request), sizeof(Response));
     if (NvStatus != NvError_Success)
     {
-#if defined(CONFIG_TEGRA_ODM_BETELGEUSE)
-        printk("%s failed to SendRequest Keyboard:Enable\n", __func__);
-#endif
         goto cleanup;
     }
 
     /* check if command passed */
     if (Response.Status != NvEcStatus_Success)
     {
-#if defined(CONFIG_TEGRA_ODM_BETELGEUSE)
-        printk("%s got failed response from SendRequest Keyboard:Enable\n", __func__);
-#endif
         goto cleanup;
     }
 
 #if WAKE_FROM_KEYBOARD
 	hOdm = NvOdmOsAlloc(sizeof(NvOdmKbdContext));
 	if (!hOdm) {
-#if defined(CONFIG_TEGRA_ODM_BETELGEUSE)
-                printk("%s failed to NvOdmOsAlloc NvOdmKbdContext\n", __func__);
-#endif
 		goto cleanup;
 	}
 
@@ -143,11 +134,7 @@ NvBool NvOdmKeyboardInit(void)
 		hOdm->GpioPinInfo->Port,
 		hOdm->GpioPinInfo->Pin,
 		&hOdm->hPin);
-NV_ASSERT(hOdm->hPin);
 	if (!hOdm->hPin) {
-#if defined(CONFIG_TEGRA_ODM_BETELGEUSE)
-                printk("%s failed to NvRmGpioAcuqirePinHandle\n", __func__);
-#endif
 		goto cleanup;
 	}
 
@@ -161,17 +148,11 @@ NV_ASSERT(hOdm->hPin);
 		&hOdm->GpioIntrHandle,
 		DEBOUNCE_TIME_MS);
 	if (NvStatus != NvError_Success) {
-#if defined(CONFIG_TEGRA_ODM_BETELGEUSE)
-                printk("%s failed to NvRmGpioInterrupRegister\n", __func__);
-#endif
 		goto cleanup;
 	}
 
 	NvStatus = NvRmGpioInterruptEnable(hOdm->GpioIntrHandle);
 	if (NvStatus != NvError_Success) {
-#if defined(CONFIG_TEGRA_ODM_BETELGEUSE)
-                printk("%s failed to NvRmGpioInterruptEnable\n", __func__);
-#endif
 		goto cleanup;
 	}
 
@@ -190,16 +171,10 @@ NV_ASSERT(hOdm->hPin);
 		sizeof(Request),
 		sizeof(Response));
 	if (NvStatus != NvError_Success) {
-#if defined(CONFIG_TEGRA_ODM_BETELGEUSE)
-                printk("%s failed to SendRequest Keyboard:ConfigureWake\n", __func__);
-#endif
 		goto cleanup;
         }
 
 	if (Response.Status != NvEcStatus_Success) {
-#if defined(CONFIG_TEGRA_ODM_BETELGEUSE)
-                printk("%s got failed response from SendRequest Keyboard:ConfigureWake\n", __func__);
-#endif
 		goto cleanup;
 	}
 
@@ -217,16 +192,10 @@ NV_ASSERT(hOdm->hPin);
 		sizeof(Request),
 		sizeof(Response));
 	if (NvStatus != NvError_Success) {
-#if defined(CONFIG_TEGRA_ODM_BETELGEUSE)
-                printk("%s failed to SendRequest Keyboard:ConfigureWakeKeyReport\n", __func__);
-#endif
 		goto cleanup;
         }
 
 	if (Response.Status != NvEcStatus_Success) {
-#if defined(CONFIG_TEGRA_ODM_BETELGEUSE)
-                printk("%s got failed response from SendRequest Keyboard:ConfigureWakeKeyReport\n", __func__);
-#endif
 		goto cleanup;
 	}
 #endif
@@ -235,9 +204,6 @@ NV_ASSERT(hOdm->hPin);
     s_hKbcKeyScanRecvSema = NvOdmOsSemaphoreCreate(0);
     if (!s_hKbcKeyScanRecvSema)
     {
-#if defined(CONFIG_TEGRA_ODM_BETELGEUSE)
-        printk("%s failed to NvOdmOsSemaphoreCreate\n", __func__);
-#endif
         goto cleanup;
     }
 
@@ -252,9 +218,6 @@ NV_ASSERT(hOdm->hPin);
                     sizeof(NvEcEvent));
     if (NvStatus != NvError_Success)
     {
-#if defined(CONFIG_TEGRA_ODM_BETELGEUSE)
-        printk("%s failed to RegisterForEvents\n", __func__);
-#endif
         goto cleanup;
     }
 

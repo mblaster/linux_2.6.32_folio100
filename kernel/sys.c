@@ -317,7 +317,7 @@ void kernel_restart(char *cmd)
 		printk(KERN_EMERG "Restarting system.\n");
 	else
 		printk(KERN_EMERG "Restarting system with command '%s'.\n", cmd);
-	while(1);
+	while(1); //Daniel 201220, EC will restart system.
 	machine_restart(cmd);
 }
 EXPORT_SYMBOL_GPL(kernel_restart);
@@ -357,7 +357,7 @@ void kernel_power_off(void)
 	disable_nonboot_cpus();
 	sysdev_shutdown();
 	printk(KERN_EMERG "Power down.\n");
-	while(1);
+	while(1); //Daniel 201220, EC will restart system.
 	machine_power_off();
 }
 EXPORT_SYMBOL_GPL(kernel_power_off);

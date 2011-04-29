@@ -27,7 +27,7 @@ extern "C"
 #endif
 
 // Constant definition
-#define TPS6586x_I2C_SPEED_KHZ   400
+#define TPS6586x_I2C_SPEED_KHZ   100
 
 // Function declaration
 NvBool Tps6586xI2cWrite8(

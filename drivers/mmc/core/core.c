@@ -1079,11 +1079,6 @@ void mmc_rescan(struct work_struct *work)
 	int err;
 	int extend_wakelock = 0;
 
-#if 0
-//add
-
-           wake_lock(&mmc_delayed_work_wake_lock);
-#endif
 	mmc_bus_get(host);
 
 	/* if there is a card registered, check whether it is still present */
@@ -1167,14 +1162,8 @@ out:
 	else
 		wake_unlock(&mmc_delayed_work_wake_lock);
 
-#if 1
-	if (host->caps & MMC_CAP_NEEDS_POLL)
-		//mmc_schedule_delayed_work(&host->detect, HZ);
-		queue_delayed_work(workqueue, &host->detect, HZ);
-#else
 	if (host->caps & MMC_CAP_NEEDS_POLL)
 		queue_delayed_work(workqueue, &host->detect, HZ);
-#endif
 }
 
 void mmc_start_host(struct mmc_host *host)
@@ -1326,17 +1315,11 @@ int mmc_suspend_host(struct mmc_host *host, pm_message_t state)
 		}
 	}
 	mmc_bus_put(host);
-#if 1 //derick
 	mmc_flush_scheduled_work();
-#endif
 
 	if (!err)
 		mmc_power_off(host);
 
-#if 0 /* ATHENV */
-	if (err == -EBUSY)
-		err = 0;
-#endif /* ATHENV */
 	return err;
 }
 
@@ -1358,14 +1341,8 @@ int mmc_resume_host(struct mmc_host *host)
 	}
 
 	if (host->bus_ops && !host->bus_dead) {
-#if 0 /* ATHENV */
-		if (!host->suspend_keep_power) {
-#endif /* ATHENV */
 		mmc_power_up(host);
 		mmc_select_voltage(host, host->ocr);
-#if 0 /* ATHENV */
-		}
-#endif /* ATHENV */
 		BUG_ON(!host->bus_ops->resume);
 		err = host->bus_ops->resume(host);
 		if (err) {
@@ -1387,9 +1364,6 @@ int mmc_resume_host(struct mmc_host *host)
 	 * We add a slight delay here so that resume can progress
 	 * in parallel.
 	 */
-#if 0 /* ATHENV */
-	if (!host->card || host->card->type != MMC_TYPE_SDIO) 
-#endif /* ATHENV */
 	mmc_detect_change(host, 1);
 
 	return err;

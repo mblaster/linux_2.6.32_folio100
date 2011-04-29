@@ -46,8 +46,8 @@ extern "C"
 #define ADT7461_ODM_REMOTE_RATE_PROTECTED               (0)
 
 // ODM policy: comparator limit values for critical shutdown (in degrees C)
-#define ADT7461_ODM_LOCAL_COMPARATOR_LIMIT_VALUE        (88L) /* original 120L */
-#define ADT7461_ODM_REMOTE_COMPARATOR_LIMIT_VALUE     (115L) /* original 115L */
+#define ADT7461_ODM_LOCAL_COMPARATOR_LIMIT_VALUE        (120L)
+#define ADT7461_ODM_REMOTE_COMPARATOR_LIMIT_VALUE       (115L)
 
 // ODM ADT7461 remote channel measurement offset
 #define ADT7461_ODM_REMOTE_OFFSET_VALUE                 (6L)

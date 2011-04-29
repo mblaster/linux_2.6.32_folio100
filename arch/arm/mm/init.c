@@ -32,6 +32,10 @@
 static unsigned long phys_initrd_start __initdata = 0;
 static unsigned long phys_initrd_size __initdata = 0;
 
+#if defined(CONFIG_TEGRA_ODM_BETELGEUSE)
+int tegra_phys_memsize = 0;
+#endif
+
 static void __init early_initrd(char **p)
 {
 	unsigned long start, size;
@@ -607,7 +611,9 @@ void __init mem_init(void)
 		printk(" %ldMB", bank_phys_size(&meminfo.bank[i]) >> 20);
 	}
 	printk(" = %luMB total\n", num_physpages >> (20 - PAGE_SHIFT));
-
+#if defined(CONFIG_TEGRA_ODM_BETELGEUSE)
+	tegra_phys_memsize =  num_physpages >> (20 - PAGE_SHIFT);
+#endif
 	codesize = _etext - _text;
 	datasize = _end - _data;
 	initsize = __init_end - __init_begin;

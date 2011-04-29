@@ -37,6 +37,7 @@
 #define NV_DEBOUNCE_TIME_MS 0
 
 #define NVODMECOMPASS_I2C_SPEED_KHZ	400
+#define NVODMECOMPASS_I2C_RETRY_CNT	2
 
 #define ECOMPASS_GUID NV_ODM_GUID('a','k','m','_','8','9','7','5')
 
@@ -59,39 +60,12 @@ WriteReg(
 static void GpioInterruptHandler(void *arg)
 {
     NvU32 pinValue;
-	NvU8 ret;
-	NvU8 buffer[SENSOR_DATA_SIZE];
-	NvU8 i;
     NvOdmEcompassHandle hDevice =  (NvOdmEcompassHandle)arg;
+	
     NvOdmGpioGetState(hDevice->hGpioINT, hDevice->hPinINT, &pinValue);
-
     if (pinValue == 1)
     {
-		ret=ReadReg(hDevice, AK8975_REG_ST1, buffer, SENSOR_DATA_SIZE);
-		if (ret<0){
-			NVODMECOMPASS_PRINTF(("AKM8975 compass driver: I2C failed\n"));
-			return;
-		}
-		/* Check ST bit */
-		if ((buffer[0] & 0x01) != 0x01) 
-		{
-			NVODMECOMPASS_PRINTF(("AKM8975 akm8975_work_func: ST is not set\n"));
-			return;
-		}		
-		/* Check ST2 bit */
-		if (((buffer[7]&0x04)==0x04)||((buffer[7]&0x08)==0x08))
-		{
-			NVODMECOMPASS_PRINTF(("AKM8975 akm8975_work_func: Data is Fail\n"));
-			return;
-		}
-		NvOdmOsMemcpy(ecompass_buffer,buffer,SENSOR_DATA_SIZE);
-        #if 0
-        NVODMECOMPASS_PRINTF(("\n"));
-		NVODMECOMPASS_PRINTF((" GPIO handle :\n"));
-        for (i=0;i<SENSOR_DATA_SIZE;i++){
-            NVODMECOMPASS_PRINTF((" Reg %d : [%02x]\n",i,ecompass_buffer[i]));
-        }
-        #endif
+		NvOdmEcompasspioInterruptMask(hDevice);				/* Daniel 20101122 <<< */
 		NvOdmOsSemaphoreSignal(hDevice->SemaphoreForINT);
     }
     NvOdmGpioInterruptDone(hDevice->hGpioInterrupt);
@@ -188,6 +162,7 @@ ReadReg(
     NvU8* value,
     NvU32 len)
 {
+	#if 0
     NvOdmI2cTransactionInfo TransactionInfo;
 
     if ( (NULL == hDevice) || (NULL == value) ||
@@ -221,6 +196,58 @@ ReadReg(
 
     NvOdmOsMemcpy(value, &s_ReadBuffer[0], len);
     return NV_TRUE;
+	#else
+	NvU32 i;
+	NvOdmI2cStatus  status = NvOdmI2cStatus_Success;
+	NvOdmI2cTransactionInfo TransactionInfo[2];
+	
+	if ( (NULL == hDevice) || (NULL == value) ||
+         (len > I2C_ECOMPASS_PACKET_SIZE-1 ) )
+    {
+        NVODMECOMPASS_PRINTF(("NvOdmI2c Get Regs Failed, max size is %d bytes\n", I2C_ECOMPASS_PACKET_SIZE-1));
+        return NV_FALSE;
+    }
+	
+	for (i=0; i<NVODMECOMPASS_I2C_RETRY_CNT; i++)
+	{
+		NvU32 TransactionCount = 0;
+		
+		s_WriteBuffer[0] = RegAddr;
+		TransactionInfo[TransactionCount].Address = hDevice->nDevAddr;
+		TransactionInfo[TransactionCount].Buf = &s_WriteBuffer[0];
+		TransactionInfo[TransactionCount].Flags =
+			NVODM_I2C_IS_WRITE | NVODM_I2C_USE_REPEATED_START;
+		TransactionInfo[TransactionCount++].NumBytes = 1;
+		
+		s_ReadBuffer[0] = 0;
+		TransactionInfo[TransactionCount].Address = (hDevice->nDevAddr | 0x1);
+		TransactionInfo[TransactionCount].Buf = &s_ReadBuffer[0];
+		TransactionInfo[TransactionCount].Flags = 0;
+		TransactionInfo[TransactionCount++].NumBytes = len;	
+
+		status = NvOdmI2cTransaction(hDevice->hOdmI2C, &TransactionInfo[0],
+			TransactionCount, NVODMECOMPASS_I2C_SPEED_KHZ, NV_WAIT_INFINITE);	
+		
+		if (status == NvOdmI2cStatus_Success)
+		{
+			NvOdmOsMemcpy(value, &s_ReadBuffer[0], len);
+			return NV_TRUE;
+		}
+	}
+	
+    // Transaction Error
+    switch (status)
+    {
+        case NvOdmI2cStatus_Timeout:
+            NVODMECOMPASS_PRINTF(("NvOdmEcompassI2cRead Failed: Timeout\n"));
+            break;
+        case NvOdmI2cStatus_SlaveNotFound:
+        default:
+            NVODMECOMPASS_PRINTF(("NvOdmEcompassI2cRead Failed: SlaveNotFound\n"));
+            break;
+    }
+    return NV_FALSE;	
+	#endif
 }
 
 static NvBool AKM8975_Init(NvOdmEcompassHandle hEcompass){
@@ -503,6 +530,35 @@ NvOdmEcompassGetMeasure(NvOdmEcompassHandle hDevice)
 NvBool
 NvodmEcompassGetData(NvOdmEcompassHandle hDevice, char* databuffer)
 {
-	NvOdmOsMemcpy(databuffer, ecompass_buffer, SENSOR_DATA_SIZE);
+	NvU8 ret;
+	NvU8 buffer[SENSOR_DATA_SIZE];
+	NvU8 i;
+
+	NvOdmOsMemset(buffer, 0, SENSOR_DATA_SIZE);		/* Daniel 20101117 <<< */
+	ret=ReadReg(hDevice, AK8975_REG_ST1, buffer, SENSOR_DATA_SIZE);
+	if (ret<0){
+		NVODMECOMPASS_PRINTF(("AKM8975 compass driver: I2C failed\n"));
+		return;
+	}
+	/* Check ST bit */
+	if ((buffer[0] & 0x01) != 0x01) 
+	{
+		NVODMECOMPASS_PRINTF(("AKM8975 akm8975_work_func: ST is not set\n"));
+		return;
+	}		
+	/* Check ST2 bit */
+	if (((buffer[7]&0x04)==0x04)||((buffer[7]&0x08)==0x08))
+	{
+		NVODMECOMPASS_PRINTF(("AKM8975 akm8975_work_func: Data is Fail\n"));
+		//return;									/* Remove for compass crash bug Daniel 20101117 <<< */
+	}
+	#if 0
+	NVODMECOMPASS_PRINTF(("\n"));
+	NVODMECOMPASS_PRINTF((" GPIO handle :\n"));
+	for (i=0;i<SENSOR_DATA_SIZE;i++){
+		NVODMECOMPASS_PRINTF((" Reg %d : [%02x]\n",i,ecompass_buffer[i]));
+	}
+	#endif
+	NvOdmOsMemcpy(databuffer,buffer,SENSOR_DATA_SIZE);
 }
 

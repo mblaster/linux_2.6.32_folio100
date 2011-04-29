@@ -512,6 +512,9 @@ struct uvc_driver {
 	struct usb_driver driver;
 
 	struct mutex open_mutex;	/* protects from open/disconnect race */
+#if defined(CONFIG_TEGRA_ODM_BETELGEUSE)
+	struct mutex camera_open_mutex;
+#endif
 
 	struct list_head devices;	/* struct uvc_device list */
 	struct list_head controls;	/* struct uvc_control_info list */

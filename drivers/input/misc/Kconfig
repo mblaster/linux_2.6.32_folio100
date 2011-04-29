@@ -360,14 +360,12 @@ config  INPUT_TEGRA_ODM_EC_CIR
         help
         Say Y here if you want to enable a cir input device node
         using the NVIDIA Tegra ODM kit CIR adaptation interface        
-
 config INPUT_TEGRA_ODM_DOCK
         boolean "DOCK  for NVIDIA Tegra ODM kit"
         depends on ARCH_TEGRA && TEGRA_ODM_KIT
         help
           Say Y here if you want to enable a dock input device node
           using the NVIDIA Tegra ODM kit dock adaptation interface
-
 config  INPUT_TEGRA_ODM_CAPSENSOR
         boolean "Capsensor  for NVIDIA Tegra ODM kit"
         depends on ARCH_TEGRA && TEGRA_ODM_KIT
@@ -375,3 +373,11 @@ config  INPUT_TEGRA_ODM_CAPSENSOR
         Say Y here if you want to enable a dock input device node
         using the NVIDIA Tegra ODM kit capsensor adaptation interface
 endif
+
+
+config INPUT_TEGRA_ODM_OVCURRENT
+	boolean "USB OverCurrent for NVDIA Tegra ODM kit"
+	depends on ARCH_TEGRA && TEGRA_ODM_KIT
+	help
+	Say Y here if you want to enable a usb overcurrent node
+          using the NVIDIA Tegra ODM kit overcurrent interface

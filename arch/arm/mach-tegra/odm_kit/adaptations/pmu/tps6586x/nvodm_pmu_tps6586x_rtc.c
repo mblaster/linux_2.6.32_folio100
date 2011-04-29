@@ -35,6 +35,7 @@ static unsigned long epoch_sec = 0;
 
 static NvBool rtc_alarm_active = NV_FALSE;      /* RTC_ALARM_ACTIVE */
 static NvBool ALARM1_used = NV_FALSE;
+static NvU32 ALARM_set_time = 0; //Daniel 20101206, alarm was set as alarm_time + now, we need to remove now when reading alarm.
 
 static NvBool bRtcNotInitialized = NV_TRUE;
 
@@ -147,7 +148,7 @@ Tps6586xRtcCountWrite(
 }
 
 /* Read RTC alarm count register */
-
+//Daniel: I change the "Count" for test. If you want original design, just do it.
 NvBool
 Tps6586xRtcAlarmCountRead(
     NvOdmPmuDeviceHandle hDevice,
@@ -163,12 +164,14 @@ Tps6586xRtcAlarmCountRead(
             Tps6586xI2cRead8(hDevice, TPS6586x_RC2_RTC_ALARM1_MID,      &ReadBuffer[1]);
             Tps6586xI2cRead8(hDevice, TPS6586x_RC1_RTC_ALARM1_HI,       &ReadBuffer[0]);
             Counter = (ReadBuffer[0] << 16) + (ReadBuffer[1] << 8) + ReadBuffer[2];
-            *Count = Counter >> 10;
+//Daniel    *Count = Counter >> 10;
+            *Count = (Counter - ALARM_set_time) >> 10;
         } else {        //( ALARM1_used )
             Tps6586xI2cRead8(hDevice, TPS6586x_RC5_RTC_ALARM2_LO,       &ReadBuffer[1]);
             Tps6586xI2cRead8(hDevice, TPS6586x_RC4_RTC_ALARM2_HI,       &ReadBuffer[0]);
             Counter = (ReadBuffer[0]<<8) + ReadBuffer[1];
-            *Count = Counter << 2;
+//Daniel    *Count = Counter << 2;
+            *Count = (Counter - ALARM_set_time) << 2;
         }               //( ALARM1_used )
 
         return NV_TRUE;
@@ -195,6 +198,17 @@ Tps6586xRtcAlarmCountWrite(
     NvU32 alarm2_start_sec;
     NvU32 alarm2_end_sec;
 
+//Daniel 20101206, disable alarm interrupt.
+    Tps6586xI2cRead8(hDevice, TPS6586x_RB4_INT_MASK5, &temp);
+    temp = temp | ~0xEF;
+    Tps6586xI2cWrite8(hDevice, TPS6586x_RB4_INT_MASK5, temp);
+    Tps6586xI2cRead8(hDevice, TPS6586x_RB3_INT_MASK4, &temp);
+    temp = temp | ~0xFD;
+    Tps6586xI2cWrite8(hDevice, TPS6586x_RB3_INT_MASK4, temp);
+    rtc_alarm_active = NV_FALSE;
+    if(Count == 0) 
+    	return NV_TRUE;
+
     alarm1_start_sec = 0;       //2^(10-10)-1 = 2^0-1 = 0
     alarm1_end_sec = 16384;     //2^(24-10) = 2^14 =16384 sec = 273 min 4 sec = 4 hr 33min 4 sec
 
@@ -220,6 +234,9 @@ Tps6586xRtcAlarmCountWrite(
                 Tps6586xI2cRead8(hDevice,  TPS6586x_RCA_RTC_COUNT0, &temp);
                 ReadBuffer32 &= 0x0000ffff;     //bit[23:08]
                 Counter = (ReadBuffer32<<8)+ temp;
+//Daniel 20101206, alarm will be set as alarm_time + now. we need to store alarm_time for alarm read routine.
+//it is ms. 
+ALARM_set_time = Counter;
                 Counter += Count << 10;
 
                 Tps6586xI2cWrite8(hDevice, TPS6586x_RC3_RTC_ALARM1_LO,  ((Counter >> 0) & 0xFF));
@@ -239,6 +256,9 @@ Tps6586xRtcAlarmCountWrite(
                 Tps6586xI2cRead8(hDevice,  TPS6586x_RCA_RTC_COUNT0, &temp);
                 ReadBuffer32 &= 0x000ffff0;     //bit[27:12]
                 Counter = ReadBuffer32 >> 4;
+//Daniel 20101206, alarm will be set as alarm_time + now. we need to store alarm_time for alarm read routine.
+//it is 4 sec. we shift the mSec 12-bit right.
+ALARM_set_time = Counter;
                 Counter += Count >>2; //(Count*4sec)
 
                 Tps6586xI2cWrite8(hDevice, TPS6586x_RC5_RTC_ALARM2_LO,  ((Counter >> 0) & 0xFF));
@@ -283,7 +303,8 @@ Tps6586xRtcWasStartUpFromNoPower(NvOdmPmuDeviceHandle hDevice)
 
     if ((Tps6586xI2cRead8(hDevice, TPS6586x_RC0_RTC_CTRL, &Data)) == NV_TRUE)
     {
-        return ((Data & 0x20)? NV_FALSE : NV_TRUE);
+//Daniel        return ((Data & 0x20)? NV_FALSE : NV_TRUE);
+        return ((Data & 0x80)? NV_FALSE : NV_TRUE); //The host can identify this situation by reading the bit, POR_RESET_N, which will be 0.
     }
     return NV_FALSE;
 }

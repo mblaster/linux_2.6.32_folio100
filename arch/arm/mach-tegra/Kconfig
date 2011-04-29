@@ -70,6 +70,13 @@ config TEGRA_DEBUG_UARTE
 
 endchoice
 
+config TEGRA_VENTANA_WIFI
+	bool "Ventana WiFi is allowed"
+	depends on MACH_VENTANA && TEGRA_ODM_KIT
+	default n
+	help
+	  Enable Ventana WiFi Setting
+	  
 config TEGRA_NVOS
 	bool "Include Tegra NvOS interfaces"
 	default y
@@ -159,6 +166,10 @@ config TEGRA_USB_VBUS_DETECT_BY_PMU
 	help
 		Enables USB VBUS detection by PMU
 
+config TEGRA_ODM_CARVEOUT_ADJUST
+	boolean "Adjust nvmap carveout amount"
+	default n
+
 choice
 	prompt "Tegra CPU power off [LP2 state] policy"
 	depends on TEGRA_NVRM
@@ -192,13 +203,14 @@ config TEGRA_LP2POLICY_IGNORE_LC
 	  Always carries on CPU idle governor LP2 request, and disables DVFS
 	  wake interrupt regardless of DVFS clock activities
 
+ 
 endchoice
 
 choice
-	prompt "Tegra USB HUB Interrupt"
+       prompt "Tegra USB HUB Interrupt"
 
 config TEGRA_ODM_USB_HUB_INTR
-	bool "Enable usb hub interrupt"
+       bool "Enable usb hub interrupt"
 endchoice
 
 if TEGRA_ODM_KIT

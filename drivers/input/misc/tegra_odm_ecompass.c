@@ -259,9 +259,7 @@ static NvS32 tegra_ecompass_thread (void *pdata)
     while(ecompass->bThreadAlive){
 		NvOdmecompassWaitInt(ecompass->hOdmEcom);
 		memset(buffer, 0, SENSOR_DATA_SIZE);
-		
 		NvodmEcompassGetData(ecompass->hOdmEcom,buffer);
-	
         #if 0
 		int i;
         printk(KERN_INFO "\n");
@@ -270,12 +268,13 @@ static NvS32 tegra_ecompass_thread (void *pdata)
             printk(KERN_INFO " Reg %d : [%02x]\n",i,buffer[i]);
         }
         #endif
-		
 		mutex_lock(&sense_data_mutex);
 		memcpy(sense_data, buffer, SENSOR_DATA_SIZE);
         atomic_set(&data_ready, 1);
 		wake_up(&data_ready_wq);		/* 20100817 Daniel */
-		mutex_unlock(&sense_data_mutex);        
+		mutex_unlock(&sense_data_mutex);
+
+		NvOdmEcompasspioInterruptUnMask(ecompass->hOdmEcom);		/* Daniel 20101122 <<< */
     }
     #endif
 	return -1;
@@ -806,7 +805,7 @@ static NvS32 akm8975_early_suspend(struct platform_device *pdev, pm_message_t st
 	//ifndef disable_irq
 	//disable_irq(this_client->irq);
 	//#endif
-	NvOdmEcompasspioInterruptMask(ecompass_dev->hOdmEcom);	
+	NvOdmEcompasspioInterruptMask(ecompass_dev->hOdmEcom);	/* Daniel 20101122 <<< */
 	AKMDBG("suspended with flag=%d", atomic_read(&reserve_open_flag));
 	return 0;
 }
@@ -814,7 +813,7 @@ static NvS32 akm8975_early_suspend(struct platform_device *pdev, pm_message_t st
 static NvS32 akm8975_early_resume(struct platform_device *pdev)
 {
 	AKMFUNC("akm8975_early_resume");
-	NvOdmEcompasspioInterruptUnMask(ecompass_dev->hOdmEcom);
+	NvOdmEcompasspioInterruptUnMask(ecompass_dev->hOdmEcom);	/* Daniel 20101122 <<< */
 	//#ifndef disable_irq
 	//enable_irq(this_client->irq);
 	//#endif

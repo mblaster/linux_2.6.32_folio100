@@ -48,6 +48,7 @@
 #define NVODMACCELEROMETER_ENABLE_PRINTF 0
 
 #define NVODMACCELEROMETER_I2C_SPEED_KHZ	400
+#define NVODMACCELEROMETER_I2C_RETRY_CNT	2
 
 #if NVODMACCELEROMETER_ENABLE_PRINTF
     #define NVODMACCELEROMETER_PRINTF(x) \
@@ -62,7 +63,8 @@
 #define NV_DEBOUNCE_TIME_MS 0
 
 #define ENABLE_XYZ_POLLING 0
-static NvU32 PollingTime = 300; // (1000 * 225)/2*375(ms)
+//static NvU32 PollingTime = 300; // (1000 * 225)/2*375(ms)
+static NvU32 PollingTime = 100; 
 #define NV_BMA150_MAX_SAMPLE_RATE   12000 //Hz
 #define NV_BMA150_MIN_SAMPLE_RATE   50 //Hz
 // sw polling time is slower than hw sample rate 225 time
@@ -90,8 +92,9 @@ extern int tegra_board_nvodm_board_id(void);
 #define NVODM_QUERY_CALIBRATION_START    0xFD
 #define CAL_0 0
 #define CAL_64 64
-#define TOLERANCE 6  //10%
- 
+//#define TOLERANCE 6  //10%
+
+NvS32 TOLERANCE=13; //20% default
 NvS32 CALIBRATION_X;
 NvS32 CALIBRATION_Y;
 NvS32 CALIBRATION_Z;
@@ -187,29 +190,10 @@ SetPowerRail(
 
 static void GpioInterruptHandler(void *arg)
 {
-#if 1
-    NvU32 pinValue;
     NvOdmAccelHandle hDevice =  (NvOdmAccelHandle)arg;
 
-    NvOdmGpioGetState(hDevice->hGpioINT, hDevice->hPinINT, &pinValue);
-//printk("\r\nLSM303DLH Interrupt Enter[%d]\n", pinValue);
-    if (pinValue == 1)
-    {
-        //NVODMACCELEROMETER_PRINTF(("\r\nLSM303DLH Interrupt"));
-//printk("\r\nLSM303DLH Interrupt.....................\n");
-       g_WaitCounter = 10;
-       //LSM303DLH_ResetInterrupt(hDevice);
-    } else
-        printk("\r\nLSM303DLH non-Interrupt\n");//NVODMACCELEROMETER_PRINTF(("\r\nLSM303DLH non-Interrupt"));
-
-    if (pinValue == 1)
-    {
-        NvOdmOsSemaphoreSignal(hDevice->SemaphoreForINT);
-    }
-msleep(300); //derick 20100729, This is for GpioInterruptHandler to handle interrupt slowly
+    NvOdmOsSemaphoreSignal(hDevice->SemaphoreForINT);
     NvOdmGpioInterruptDone(hDevice->hGpioInterrupt);
-#endif
-    return;
 }
 
 static NvBool ConnectSemaphore(NvOdmAccelHandle hDevice)
@@ -239,7 +223,7 @@ static NvBool ConnectSemaphore(NvOdmAccelHandle hDevice)
         return NV_FALSE;
     }
 
-    mode = NvOdmGpioPinMode_InputInterruptHigh;
+    mode = NvOdmGpioPinMode_InputInterruptRisingEdge; //NvOdmGpioPinMode_InputInterruptHigh;
     if (NvOdmGpioInterruptRegister(hDevice->hGpioINT,
         &hDevice->hGpioInterrupt, hDevice->hPinINT, mode, callback,
         hDevice, NV_DEBOUNCE_TIME_MS) == NV_FALSE)
@@ -472,6 +456,7 @@ ReadReg(
     NvU8* value,
     NvU32 len)
 {
+	#if 0
     NvOdmI2cTransactionInfo TransactionInfo;
 
     if ( (NULL == hDevice) || (NULL == value) ||
@@ -507,6 +492,58 @@ ReadReg(
 
     NvOdmOsMemcpy(value, &s_ReadBuffer[0], len);
     return NV_TRUE;
+	#else
+	NvU32 i;
+	NvOdmI2cStatus  status = NvOdmI2cStatus_Success;
+	NvOdmI2cTransactionInfo TransactionInfo[2];
+	
+	if ( (NULL == hDevice) || (NULL == value) ||
+         (len > I2C_ACCELRATOR_PACKET_SIZE-1 ) )
+    {
+        NVODMACCELEROMETER_PRINTF(("NvOdmI2c Get Regs Failed, max size is %d bytes\n", I2C_ACCELRATOR_PACKET_SIZE-1));
+        return NV_FALSE;
+    }
+	
+	for (i=0; i<NVODMACCELEROMETER_I2C_RETRY_CNT; i++)
+	{
+		NvU32 TransactionCount = 0;
+		
+		s_WriteBuffer[0] = RegAddr;
+		TransactionInfo[TransactionCount].Address = hDevice->nDevAddr;
+		TransactionInfo[TransactionCount].Buf = &s_WriteBuffer[0];
+		TransactionInfo[TransactionCount].Flags =
+			NVODM_I2C_IS_WRITE | NVODM_I2C_USE_REPEATED_START;
+		TransactionInfo[TransactionCount++].NumBytes = 1;
+		
+		s_ReadBuffer[0] = 0;
+		TransactionInfo[TransactionCount].Address = (hDevice->nDevAddr | 0x1);
+		TransactionInfo[TransactionCount].Buf = &s_ReadBuffer[0];
+		TransactionInfo[TransactionCount].Flags = 0;
+		TransactionInfo[TransactionCount++].NumBytes = len;	
+
+		status = NvOdmI2cTransaction(hDevice->hOdmI2C, &TransactionInfo[0],
+			TransactionCount, NVODMACCELEROMETER_I2C_SPEED_KHZ, NV_WAIT_INFINITE);	
+		
+		if (status == NvOdmI2cStatus_Success)
+		{
+			NvOdmOsMemcpy(value, &s_ReadBuffer[0], len);
+			return NV_TRUE;
+		}
+	}
+	
+    // Transaction Error
+    switch (status)
+    {
+        case NvOdmI2cStatus_Timeout:
+            NVODMACCELEROMETER_PRINTF(("NvOdmAccelerometerI2cRead Failed: Timeout\n"));
+            break;
+        case NvOdmI2cStatus_SlaveNotFound:
+        default:
+            NVODMACCELEROMETER_PRINTF(("NvOdmAccelerometerI2cRead Failed: SlaveNotFound\n"));
+            break;
+    }
+    return NV_FALSE;		
+	#endif
 }
 
 static NvBool lsm303dlh_acc_device_hw_init(NvOdmAccelHandle hAccel)
@@ -823,7 +860,7 @@ NvBool NvOdmAccelOpen(NvOdmAccelHandle* hDevice)
             case NvOdmIoModule_Vdd:
                 hAccel->VddId = pConnectivity->AddressList[i].Address;
                 // Power on accelerometer according to Vddid
-                SetPowerRail(hAccel->hPmu, hAccel->VddId, NV_TRUE);
+                //SetPowerRail(hAccel->hPmu, hAccel->VddId, NV_TRUE);
                 break;
 #endif
             default:
@@ -865,7 +902,7 @@ NvBool NvOdmAccelOpen(NvOdmAccelHandle* hDevice)
         // Release all of resources requested.
         if (hAccel)
         {
-            SetPowerRail(hAccel->hPmu, hAccel->VddId, NV_FALSE);
+            //SetPowerRail(hAccel->hPmu, hAccel->VddId, NV_FALSE);
             NvOdmServicesPmuClose(hAccel->hPmu);
             hAccel->hPmu = NULL;
             NvOdmI2cClose(hAccel->hOdmI2C);
@@ -892,7 +929,7 @@ void NvOdmAccelClose(NvOdmAccelHandle hDevice)
         NvOdmI2cClose(hDevice->hOdmI2C);
 
         // Power off accelermeter
-        SetPowerRail(hDevice->hPmu, hDevice->VddId, NV_FALSE);
+        //SetPowerRail(hDevice->hPmu, hDevice->VddId, NV_FALSE);
         if (hDevice->hPmu)
         {
             //NvAccelerometerSetPowerOn(0);
@@ -943,15 +980,7 @@ NvOdmAccelWaitInt(
     NV_ASSERT(IntType);
     NV_ASSERT(IntMotionAxis);
     NV_ASSERT(IntTapAxis);
-#if 1
-    if ((g_WaitCounter > 0) || ENABLE_XYZ_POLLING)
-    {
         NvOdmOsSemaphoreWaitTimeout( hDevice->SemaphoreForINT, PollingTime);
-        g_WaitCounter--;
-    }
-    else
-#endif
-        NvOdmOsSemaphoreWait( hDevice->SemaphoreForINT);
 }
 
 void NvOdmAccelSignal(NvOdmAccelHandle hDevice)
@@ -1253,6 +1282,13 @@ lsm303dlh_acc_self_test(NvOdmAccelHandle hDevice)
 }
 
 NvBool
+lsm303dlh_acc_calibration_tolerance_set(NvOdmAccelHandle hDevice, NvS32 value)
+{
+	TOLERANCE = value;
+	return NV_TRUE;
+}
+
+NvBool
 lsm303dlh_acc_calibration(NvOdmAccelHandle hDevice, NvS32 axis)
 {
 	NvS32 AccelX = 0;
@@ -1270,7 +1306,7 @@ lsm303dlh_acc_calibration(NvOdmAccelHandle hDevice, NvS32 axis)
 	while((i < times) && (err_times < times))
 	{
 		err = LS303DLH_ReadXYZ(hDevice, &AccelX, &AccelY, &AccelZ);
-		//printk("AccelX=%d, AccelY=%d, AccelZ=%d\n",AccelX, AccelY, AccelZ);
+		printk("AccelX=%d, AccelY=%d, AccelZ=%d\n",AccelX, AccelY, AccelZ);
 
 		if (err < 0)
 		{
@@ -1329,6 +1365,8 @@ lsm303dlh_acc_calibration(NvOdmAccelHandle hDevice, NvS32 axis)
 			
 	}
 
+	printk("Tolerance value=%d\n", TOLERANCE);	
+
 	if ((abs(OUT_X_NOST[axis-1]) > TOLERANCE)||(abs(OUT_Y_NOST[axis-1]) > TOLERANCE)||(abs(OUT_Z_NOST[axis-1]) > TOLERANCE) )
 	{
 		printk("G-sensor calibration failed.\n");		
@@ -1371,3 +1409,14 @@ lsm303dlh_acc_calibration(NvOdmAccelHandle hDevice, NvS32 axis)
 	
 	return NV_TRUE;
 }
+
+void lsm303dlh_acc_DisableIntr(NvOdmAccelHandle    hDevice)
+{
+    NvOdmGpioInterruptMask(hDevice->hGpioInterrupt, NV_TRUE);
+}
+
+void lsm303dlh_acc_EnableIntr(NvOdmAccelHandle    hDevice)
+{
+    NvOdmGpioInterruptMask(hDevice->hGpioInterrupt, NV_FALSE);
+}
+

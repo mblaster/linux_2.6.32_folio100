@@ -45,7 +45,7 @@
 #include "nvodm_query_discovery.h"
 #include "nvos.h"
 
-#define NVODM_CAPSENSOR_ENABLE_PRINTF 1
+#define NVODM_CAPSENSOR_ENABLE_PRINTF 0
 
 #if NVODM_CAPSENSOR_ENABLE_PRINTF
     #define NVODM_CAPSENSOR_PRINTF(x) \
@@ -61,11 +61,13 @@ static volatile unsigned int KeyEvent = 0;
 #define NVODM_QUERY_I2C_CLOCK_SPEED      100    // kHz
 #define NVODM_QUERY_I2C_EEPROM_ADDRESS   0xA0   // I2C device base address for EEPROM (7'h50)
 #define NVODM_QUERY_SENSITIVITY_START    0x7C   // 0x7C,0x7D,0x7E,0x7F
-
-static unsigned int  cap_sensitivity = 0x08151515; // Default Sensitivity for Cap Sensor board
+#define CAPSENSOR_I2C_RETRY_CNT     2
+static unsigned int  cap_sensitivity_v1 = 0x08151515;    // Default Sensitivity [08] [21] [21] [21] for Cap Sensor board V1.0 FW(CSM + difital filter)
+static unsigned int  cap_sensitivity_v2 = 0x646E8C78;    // Default Sensitivity [100][110][140][120]for Cap Sensor board V2.0 FW (CVD + difital filter)
 extern int tegra_board_nvodm_board_id(void);
 static int dmi_flag = 0;
-static NvU32 sensitivity  = 0xffffffff;        
+static NvU32 sensitivity  = 0xffffffff;  
+static NvU32 fw_rev = 0;       
 static void GpioInterruptHandler(void *arg)
 {
      
@@ -141,11 +143,7 @@ NvOdmDMII2cWrite8(
     NvOdmI2cTransactionInfo TransactionInfo;
 
     WriteBuffer[0] = Offset;
-    /*WriteBuffer[4] = (pData&0xff);
-    WriteBuffer[3] = ((pData>>8)&0xff);
-    WriteBuffer[2] = ((pData>>16)&0xff);
-    WriteBuffer[1] = ((pData>>24)&0xff);
-    */
+  
     WriteBuffer[1] = (pData&0xff);
     WriteBuffer[2] = ((pData>>8)&0xff);
     WriteBuffer[3] = ((pData>>16)&0xff);
@@ -165,6 +163,7 @@ NvOdmDMII2cWrite8(
 
     return Error;
 }
+
 /*
     To Read Sensitivity from DMI EEPROM
 */
@@ -248,10 +247,6 @@ WriteReg(
     return NV_TRUE;
 }
 
-/*
-    Read Cap Sensor Register  form the PIC16F722
-*/
-
 static NvBool
 ReadReg(
     NvOdmCapHandle hDevice, // NvOdmAccelHandle hDevice,
@@ -259,9 +254,11 @@ ReadReg(
     NvU8* value,
     NvU32 len)
 {
-
-    NvOdmI2cTransactionInfo TransactionInfo;
-
+    NvU32 i;
+    NvU8 ReadBuffer = 0;
+    NvOdmI2cStatus  status = NvOdmI2cStatus_Success;    
+    NvOdmI2cTransactionInfo TransactionInfo[2];
+    
     if ( (NULL == hDevice) || (NULL == value) ||
          (len > I2C_CAPSENSOR_PACKET_SIZE-1 ) )
     {
@@ -270,32 +267,48 @@ ReadReg(
             I2C_CAPSENSOR_PACKET_SIZE-1));
         return NV_FALSE;
     }
+    
+    for (i = 0; i < CAPSENSOR_I2C_RETRY_CNT; i++)
+    {
+        NvU32 TransactionCount = 0;    
+        s_WriteBuffer[0] = RegAddr;
 
-    s_WriteBuffer[0] = RegAddr;
-    TransactionInfo.Address = (hDevice->nDevAddr<<1);
-    TransactionInfo.Buf = s_WriteBuffer;
-    TransactionInfo.Flags = NVODM_I2C_IS_WRITE;
-    TransactionInfo.NumBytes = 1;
+        TransactionInfo[TransactionCount].Address = (hDevice->nDevAddr<<1);      
+        TransactionInfo[TransactionCount].Buf = s_WriteBuffer;
+        TransactionInfo[TransactionCount].Flags =
+            NVODM_I2C_IS_WRITE | NVODM_I2C_USE_REPEATED_START;
+        TransactionInfo[TransactionCount++].NumBytes = 1;
 
-    // Write the accelerometor RegAddr (from where data is to be read).
-    if (NvOdmI2cTransaction(hDevice->hOdmI2C, &TransactionInfo, 1, 100,
-            I2C_CAPSENSOR_TRANSACTION_TIMEOUT) != NvOdmI2cStatus_Success)
-        return NV_FALSE;
+        TransactionInfo[TransactionCount].Address = ((hDevice->nDevAddr<<1) | 0x1);                 
+        TransactionInfo[TransactionCount].Buf = s_ReadBuffer;
+        TransactionInfo[TransactionCount].Flags = 0;
+        TransactionInfo[TransactionCount++].NumBytes = len;
 
-    s_ReadBuffer[0] = 0;
-    TransactionInfo.Address = ((hDevice->nDevAddr<<1)| 0x1);
-    TransactionInfo.Buf = s_ReadBuffer;
-    TransactionInfo.Flags = 0;
-    TransactionInfo.NumBytes = len;
+        // Read data from Cap Sensor Chip at the specified offset
+        status = NvOdmI2cTransaction(hDevice->hOdmI2C, &TransactionInfo[0],
+            TransactionCount, 100, NV_WAIT_INFINITE);
 
-    //Read the data from the eeprom at the specified RegAddr
-    if (NvOdmI2cTransaction(hDevice->hOdmI2C, &TransactionInfo, 1, 100,
-            I2C_CAPSENSOR_TRANSACTION_TIMEOUT) != NvOdmI2cStatus_Success)
-        return NV_FALSE;
+        if (status == NvOdmI2cStatus_Success)
+        {
+          
+            NvOdmOsMemcpy(value, &s_ReadBuffer[0], len);
+            return NV_TRUE;
+        }
+    }
 
-    NvOdmOsMemcpy(value, &s_ReadBuffer[0], len);
-
-    return NV_TRUE;
+    // Transaction Error
+    switch (status)
+    {
+        case NvOdmI2cStatus_Timeout:
+             NVODM_CAPSENSOR_PRINTF(("Read Failed: Timeout\n"));
+            break;
+        case NvOdmI2cStatus_SlaveNotFound:
+        default:
+             NVODM_CAPSENSOR_PRINTF(("Read Failed: SlaveNotFound\n"));
+            break;
+    }
+    return NV_FALSE;
+    
 }
 
 static NvU32 
@@ -305,7 +318,7 @@ NvOdmReadSensitivityFromDMI(void)
     NvU32 Sensitivity  = 0;
     NvOdmI2cStatus Error; 
     NvOdmServicesI2cHandle hOdmI2c = NULL;
-    if(tegra_board_nvodm_board_id()==1){  
+    if(tegra_board_nvodm_board_id()>=1){  
      hOdmI2c = NvOdmI2cOpen(NvOdmIoModule_I2c_Pmu, 0);
     }else{
      hOdmI2c = NvOdmI2cOpen(NvOdmIoModule_I2c, 0);
@@ -316,7 +329,7 @@ NvOdmReadSensitivityFromDMI(void)
      Error = NvOdmDMII2cRead8(
             hOdmI2c, NVODM_QUERY_I2C_EEPROM_ADDRESS, NVODM_QUERY_SENSITIVITY_START, &RetVal);
      
-     if ((Error != NvOdmI2cStatus_Success)||(RetVal>=0x5f)){     
+     if ((Error != NvOdmI2cStatus_Success)){     
          goto error2; 
      }   
      Sensitivity |=RetVal;     
@@ -324,7 +337,7 @@ NvOdmReadSensitivityFromDMI(void)
      Error = NvOdmDMII2cRead8(
             hOdmI2c, NVODM_QUERY_I2C_EEPROM_ADDRESS, NVODM_QUERY_SENSITIVITY_START+1, &RetVal);
      
-     if ((Error != NvOdmI2cStatus_Success)||(RetVal>=0x5f)){     
+     if ((Error != NvOdmI2cStatus_Success)){     
          goto error2; 
      }   
      Sensitivity |=(RetVal<<8);     
@@ -332,7 +345,7 @@ NvOdmReadSensitivityFromDMI(void)
      Error = NvOdmDMII2cRead8(
             hOdmI2c, NVODM_QUERY_I2C_EEPROM_ADDRESS, NVODM_QUERY_SENSITIVITY_START+2, &RetVal);
      
-     if ((Error != NvOdmI2cStatus_Success)||(RetVal>=0x5f)){     
+     if ((Error != NvOdmI2cStatus_Success)){     
          goto error2; 
      }   
      Sensitivity |=(RetVal<<16);    
@@ -340,7 +353,7 @@ NvOdmReadSensitivityFromDMI(void)
      Error = NvOdmDMII2cRead8(
             hOdmI2c, NVODM_QUERY_I2C_EEPROM_ADDRESS, NVODM_QUERY_SENSITIVITY_START+3, &RetVal);
      
-     if ((Error != NvOdmI2cStatus_Success)||(RetVal>=0x5f)){     
+     if ((Error != NvOdmI2cStatus_Success)){     
          goto error2; 
      }   
      Sensitivity |=(RetVal<<24);    
@@ -378,28 +391,32 @@ error:
 static NvBool 
 Cap_Sensor_Init(NvOdmCapHandle hCap)
 {
-    NvU8 TestVal = 0;   
-  //  NvU32 sensitivity  = 0xffffffff;        
-    
-    ReadReg(hCap, CHIP_ID_REG, &TestVal, 1);       
-    
-    if (TestVal != CAPSENSOR_CHIP_ID)
-    {
-        NVODM_CAPSENSOR_PRINTF(("Unknown Cap Sensor ID = 0x%x\n", TestVal));
-        goto error;
-    }
-    
+        
+ 
     if(dmi_flag==0){
-        sensitivity = NvOdmReadSensitivityFromDMI();
+        if(NvOdmCapReadDevInfo(hCap,&fw_rev)==NV_FALSE){
+            NVODM_CAPSENSOR_PRINTF(("Fail to read Chip ID or  FW version = 0x%x\n", fw_rev));
+            goto error;
+        }        
+        sensitivity = NvOdmReadSensitivityFromDMI();      
         dmi_flag = 1;
     }
     
-    if(sensitivity==0xffffffff)      // Use default sensitivity
-     sensitivity = cap_sensitivity;  /* Default Sensitivity 0x10(Menu) 0x15(Home) 0x15(Back) 0x15(Serach) */
+    NVODM_CAPSENSOR_PRINTF(("\r\n Cap Sensor Chip Info: ID = 0x%x FW_REV2_REG = 0x%x FW_REV1_REG = 0x%x FW_REV0_REG = 0x%x\n",((fw_rev>>24)&0xff),((fw_rev>>16)&0xff),((fw_rev>>8)&0xff),(fw_rev&0xff)));     
+    if((sensitivity==0xffffffff)&&(fw_rev==FW_REV_ID_0)){       // Use default sensitivity
+        sensitivity = cap_sensitivity_v1;                        /* Default Sensitivity 0x08(Menu) 0x15(Home) 0x15(Back) 0x15(Serach) */             
+        NvOdmCapProgSensitivity(hCap,cap_sensitivity_v1);
+    }
+    
+    if((sensitivity==0xffffffff)&&(fw_rev==FW_REV_ID_1)){       // Use default sensitivity
+        sensitivity = cap_sensitivity_v2;                        /* Default Sensitivity 0x64(Menu) 0x6E(Home) 0x8C(Back) 0x78(Serach) */     
+        NvOdmCapProgSensitivity(hCap,cap_sensitivity_v2);
+    }
     
     if(NvOdmCapAdjustSensitivity(hCap,sensitivity)==NV_FALSE)   
       goto error;
     
+    if(fw_rev==FW_REV_ID_0)
     if(SetLowestSensitivity(hCap)==NV_FALSE) 
       goto error;       
     
@@ -447,7 +464,7 @@ NvOdmCapProgSensitivity(NvOdmCapHandle hDevice, NvU32 value)
     NvU8 Data = 0;
     NvOdmI2cStatus Error; 
 
-    if(tegra_board_nvodm_board_id()==1){  
+    if(tegra_board_nvodm_board_id()>=1){  
     hOdmI2c = NvOdmI2cOpen(NvOdmIoModule_I2c_Pmu, 0);
     }else{
      hOdmI2c = NvOdmI2cOpen(NvOdmIoModule_I2c, 0);
@@ -528,7 +545,7 @@ NvOdmCapReadDMI(NvOdmCapHandle hDevice,  NvU8* value, NvU8 address)
   NvOdmI2cStatus Error; 
   NvOdmServicesI2cHandle hOdmI2c = NULL;
   
-    if(tegra_board_nvodm_board_id()==1){
+    if(tegra_board_nvodm_board_id()>=1){
         hOdmI2c = NvOdmI2cOpen(NvOdmIoModule_I2c_Pmu, 0);
     }else{
         hOdmI2c = NvOdmI2cOpen(NvOdmIoModule_I2c, 0);
@@ -600,6 +617,43 @@ error:
     NVODM_CAPSENSOR_PRINTF(("\n R/W Register Fail"));
     return NV_FALSE;    
 }
+/*
+    Read Sensitivity reading from PIC chip ; only for 01000201 FW reversion
+*/
+NvU8 
+GetButtonReading(NvOdmCapHandle hDevice, NvU32 value)
+{
+  NvU8 Data = 0;
+  
+  if(fw_rev!=FW_REV_ID_0)
+  {    
+    switch(value)
+    {     
+        case 0x08:   
+            if (!ReadReg(hDevice,BTN0_SENSITIVITY_REG, &Data, 1))
+            goto ret_error;
+            break;    
+        case 0x10:   
+           if (!ReadReg(hDevice, BTN1_SENSITIVITY_REG, &Data, 1))
+           goto ret_error;
+           break;    
+        case 0x20:   
+        if (!ReadReg(hDevice, BTN2_SENSITIVITY_REG, &Data, 1))
+           goto ret_error;
+           break;    
+        case 0x80:   
+        if (!ReadReg(hDevice, BTN6_SENSITIVITY_REG, &Data, 1))
+           goto ret_error;
+           break;    
+        default: break;    
+        
+    }
+          return Data;  
+  }
+  
+ret_error:  
+        return 0xFF;
+}
     
 NvBool NvOdmCapOpen(NvOdmCapHandle* hDevice)
 {
@@ -609,7 +663,7 @@ NvBool NvOdmCapOpen(NvOdmCapHandle* hDevice)
     const NvOdmPeripheralConnectivity *pConnectivity;
     NvBool FoundGpio = NV_FALSE, FoundI2cModule = NV_FALSE;
    
-    if(tegra_board_nvodm_board_id()==1){
+    if(tegra_board_nvodm_board_id()>=1){
         IoModule = NvOdmIoModule_I2c_Pmu;
     }
     
@@ -623,7 +677,7 @@ NvBool NvOdmCapOpen(NvOdmCapHandle* hDevice)
     
     NvOdmOsMemset(hCap, 0, sizeof(NvOdmCapSensor));  
     
-    if(tegra_board_nvodm_board_id()==1){   
+    if(tegra_board_nvodm_board_id()>=1){   
       pConnectivity = (NvOdmPeripheralConnectivity*)NvOdmPeripheralGetGuid( NV_ODM_GUID('c','a','p','p','w','r',' ',' '));   
     } else {
       pConnectivity = (NvOdmPeripheralConnectivity*)NvOdmPeripheralGetGuid( NV_ODM_GUID('c','a','p','g','e','n','1',' '));
@@ -704,15 +758,16 @@ error:
 NvBool
 NvOdmCapSuspend(NvOdmCapHandle hDevice)
 {
-    NvU8  TestVal;          
-    TestVal = 0x1;     
-    if (!WriteReg(hDevice,PCTRL_REG, &TestVal, 1))
-        goto error;
-    NVODM_CAPSENSOR_PRINTF(("\n Set Cap Sensor Board into Suspend\n"));
-     return NV_TRUE; 
-error:
-    NVODM_CAPSENSOR_PRINTF(("\n Fail to set Cap Sensor Board into Suspend\n"));
-    return NV_FALSE;     
+   NvU8  TestVal = 0;          
+   
+   WriteReg(hDevice,INT_REG, &TestVal, 1);
+   WriteReg(hDevice,LED_CTRL_REG , &TestVal, 1);
+   
+   TestVal = 0xff;
+   WriteReg(hDevice,LED_MANUAL_MODE_REG, &TestVal, 1);
+   
+   NVODM_CAPSENSOR_PRINTF(("\n Set Cap Sensor Board into Suspend\n"));  
+   return NV_TRUE;     
 }
 
 /*
@@ -721,25 +776,17 @@ error:
 NvBool
 NvOdmResume(NvOdmCapHandle hDevice)
 {
-    NvU8  TestVal = 0x02,retry = 5;     
-       
-    if (!WriteReg(hDevice,PCTRL_REG, &TestVal, 1)) goto error;        
-        
-    while(1)  
-    {
-      ReadReg(hDevice, PCTRL_REG, &TestVal, 1);        
-      if(((TestVal&0x02)==0)||((retry--)==0)) break;
-         
-    }   
-       
-    if(Cap_Sensor_Init(hDevice)== NV_FALSE)
-     goto error;  
+  NvU8  TestVal = 0x01;
     
-    NVODM_CAPSENSOR_PRINTF(("\n!!!!!!!!!! Cap Sensor Resume from Suspend !!!!!!!!!!!!!\n"));  
-    return NV_TRUE;    
-error:
-    NVODM_CAPSENSOR_PRINTF(("\n!!!!!!!!!! Fail set Cap Sensor Board into Resume !!!!!!!!!!!!!"));
-    return NV_FALSE;    
+ WriteReg(hDevice,INT_REG, &TestVal, 1);
+ WriteReg(hDevice,LED_CTRL_REG , &TestVal, 1);
+ 
+ TestVal = 0x00;
+ WriteReg(hDevice,LED_MANUAL_MODE_REG, &TestVal, 1);
+ 
+ NVODM_CAPSENSOR_PRINTF(("\n!!!!!!!!!! Cap Sensor Resume from Suspend !!!!!!!!!!!!!\n")); 
+ return NV_TRUE;    
+
 }
 
 void NvOdmCapClose(NvOdmCapHandle hDevice)

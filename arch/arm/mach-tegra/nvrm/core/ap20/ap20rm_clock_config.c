@@ -421,7 +421,7 @@ static void Ap20EmcConfigInit(NvRmDeviceHandle hRmDevice)
                          UndividedIndex;
                      s_Ap20EmcConfigSortedTable[i].Emc2xKHz = Emc2xKHz;
 
-                     /*
+/*
                       * The undivided table entry specifies parameters for
                       * EMC2xKHz = SourceKHz; the EMC divisor field is set to
                       * "0". Next table entries specify parameters for EMC2xKHz
@@ -472,15 +472,15 @@ static void Ap20EmcConfigInit(NvRmDeviceHandle hRmDevice)
      }
 }
 
-// EMC module virtual base address to speed up timing update
-static void* s_pEmcBaseReg = NULL;
-
 static void
 Ap20EmcTimingSet(
     NvRmDeviceHandle hRmDevice,
     const NvRmAp20EmcTimingConfig* pEmcConfig)
 {
     NvU32 i, a, d;
+
+	// EMC module virtual base address to speed up timing update
+	static void* s_pEmcBaseReg = NULL;
 
     if (s_pEmcBaseReg == NULL)
     {
@@ -492,47 +492,10 @@ Ap20EmcTimingSet(
 
     for (i = 0; i < s_Ap20EmcConfig.EmcTimingRegNum; i++)
     {
-        d = pEmcConfig->pOdmEmcConfig->EmcTimingParameters[i];
+            d = pEmcConfig->pOdmEmcConfig->EmcTimingParameters[i];
         a = (((NvU32)(s_pEmcBaseReg)) + s_Ap20EmcConfig.pEmcTimingReg[i]);
         NV_WRITE32(a, d);
     }
-
-    // Clear clock change interrupt status (write 1 to clear)
-    a = (((NvU32)(s_pEmcBaseReg)) + EMC_INTSTATUS_0);
-    d = NV_DRF_NUM(EMC, INTSTATUS, CLKCHANGE_COMPLETE_INT, 1);
-    NV_WRITE32(a, d);
-
-    d = NV_READ32(a);   // make sure writes are completed
-}
-
-static void
-Ap20EmcTimingSetFinish(
-    NvRmDeviceHandle hRmDevice,
-    const NvRmAp20EmcTimingConfig* pEmcConfig)
-{
-    NvU32 a, d;
-    NV_ASSERT(s_pEmcBaseReg);
-
-    // After EMC clock change is completed, digital DLL should be restarted
-    // (provided it is enabled for current EMC frequency)
-    if (!NV_DRF_VAL(EMC, CFG_DIG_DLL, CFG_DLL_EN, pEmcConfig->EmcDigDll))
-        return;
-
-    a = (((NvU32)(s_pEmcBaseReg)) + EMC_INTSTATUS_0);
-    for (;;)
-    {
-        d = NV_DRF_VAL(EMC, INTSTATUS, CLKCHANGE_COMPLETE_INT, NV_READ32(a));
-        if (d)
-            break;
-    }
-
-    a = (((NvU32)(s_pEmcBaseReg)) + EMC_CFG_DIG_DLL_0);
-    NV_WRITE32(a, pEmcConfig->EmcDigDll);
-    d = NV_READ32(a);   // make sure writes are completed
-
-    a = (((NvU32)(s_pEmcBaseReg)) + EMC_TIMING_CONTROL_0);
-    d = NV_DRF_NUM(EMC, TIMING_CONTROL, TIMING_UPDATE, 1);
-    NV_WRITE32(a, d);
     d = NV_READ32(a);   // make sure writes are completed
 }
 
@@ -601,7 +564,6 @@ Ap20EmcSwitchToUndividedPllM0(
     NV_REGW(hRmDevice, NvRmPrivModuleID_ClockAndReset, 0,
             CLK_RST_CONTROLLER_CLK_SOURCE_EMC_0, reg);
     NvOsWaitUS(NVRM_CLOCK_CHANGE_DELAY);
-    Ap20EmcTimingSetFinish(hRmDevice, pEmcConfig);
 
     // Now set new divider value. Note that PLLM_UD bit is already set, so
     // the actual EMC frequency is not changed. Hence, no need to update EMC
@@ -644,7 +606,6 @@ Ap20EmcSwitchFromUndividedPllM0(
     NV_REGW(hRmDevice, NvRmPrivModuleID_ClockAndReset, 0,
             CLK_RST_CONTROLLER_CLK_SOURCE_EMC_0, reg);
     NvOsWaitUS(NVRM_CLOCK_CHANGE_DELAY);
-    Ap20EmcTimingSetFinish(hRmDevice, pEmcConfig);
 
     // Update EMC state
     s_Ap20EmcConfig.UdPllM0 = NV_FALSE;
@@ -684,7 +645,6 @@ Ap20EmcSwitchDividedSources(
     NV_REGW(hRmDevice, NvRmPrivModuleID_ClockAndReset, 0,
             CLK_RST_CONTROLLER_CLK_SOURCE_EMC_0, reg);
     NvOsWaitUS(NVRM_CLOCK_CHANGE_DELAY);
-    Ap20EmcTimingSetFinish(hRmDevice, pEmcConfig);
 
     // Update EMC state (undivided path status not changed)
     NV_ASSERT(!s_Ap20EmcConfig.UdPllM0);

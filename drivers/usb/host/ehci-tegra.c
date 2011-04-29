@@ -35,6 +35,7 @@
 #include "nvrm_power.h"
 #include "nvrm_hardware_access.h"
 #include "nvddk_usbphy.h"
+#include "../core/usb.h"
 
 #define TEGRA_USB_ID_INT_ENABLE			(1 << 0)
 #define TEGRA_USB_ID_INT_STATUS			(1 << 1)
@@ -794,3 +795,95 @@ static struct platform_driver tegra_ehci_driver =
 		.name	= "tegra-ehci",
 	}
 };
+
+#if defined(CONFIG_TEGRA_ODM_BETELGEUSE)
+static int
+udev_set_autosuspend(struct usb_device *udev,int value)
+{
+   if ( value >= INT_MAX/HZ ||	value <= - INT_MAX/HZ)
+	return -EINVAL;
+   value *= HZ;
+
+   udev->autosuspend_delay = value;
+   if (value >= 0)
+	usb_try_autosuspend_device(udev);
+   else {
+	if (usb_autoresume_device(udev) == 0)
+	    usb_autosuspend_device(udev);
+   }
+
+   return 0;
+}
+
+static int
+udev_set_level(struct usb_device *udev,int event)
+{
+   int rc = 0;
+   int old_autosuspend_disabled, old_autoresume_disabled;
+
+   usb_lock_device(udev);
+
+   old_autosuspend_disabled = udev->autosuspend_disabled;
+   old_autoresume_disabled = udev->autoresume_disabled;
+
+   if (event==PM_EVENT_ON) {
+	udev->autosuspend_disabled = 1;
+	udev->autoresume_disabled = 0;
+	rc = usb_external_resume_device(udev, PMSG_USER_RESUME);
+
+   } else if (event==PM_EVENT_AUTO) {
+	udev->autosuspend_disabled = 0;
+	udev->autoresume_disabled = 0;
+	rc = usb_external_resume_device(udev, PMSG_USER_RESUME);
+
+   } else if (event==PM_EVENT_SUSPEND) {
+	udev->autosuspend_disabled = 0;
+	udev->autoresume_disabled = 1;
+	rc = usb_external_suspend_device(udev, PMSG_USER_SUSPEND);
+   } else
+	rc = -EINVAL;
+
+   if (rc) {
+	udev->autosuspend_disabled = old_autosuspend_disabled;
+	udev->autoresume_disabled = old_autoresume_disabled;
+   }
+   usb_unlock_device(udev);
+
+   return rc;
+}
+
+struct mutex * get_camera_open_mutex();
+static inline lock_camera_mutext(){
+   mutex_lock( get_camera_open_mutex() );
+}
+
+static inline unlock_camera_mutext(){
+   mutex_unlock( get_camera_open_mutex() );
+}
+
+extern void betelgeuse_camera_do_pm(struct platform_device *pdev ,int event){
+   struct usb_device *rhdev_usb;
+   struct usb_device *rhdev_uvc;
+   
+   struct usb_hcd *hcd = platform_get_drvdata(pdev);
+   struct usb_device *root_hub=hcd->self.root_hub;
+	
+   if ( !root_hub || !root_hub->children[0]) return ;
+
+   rhdev_usb = root_hub;
+   rhdev_uvc = rhdev_usb->children[0];
+
+   if ( event == PM_EVENT_SUSPEND )
+   {
+	lock_camera_mutext();
+	udev_set_autosuspend(rhdev_usb ,0);
+	udev_set_level(rhdev_uvc ,PM_EVENT_SUSPEND );
+   } 
+   else if ( event == PM_EVENT_RESUME )
+   {
+	udev_set_autosuspend(rhdev_usb ,2);
+	udev_set_level(rhdev_uvc ,PM_EVENT_ON );
+	unlock_camera_mutext();
+   }
+}
+#endif

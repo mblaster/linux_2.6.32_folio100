@@ -42,25 +42,16 @@
 #include "nvodm_services.h"
 #include "nvos.h"
 
-#if defined(CONFIG_TEGRA_ODM_BETELGEUSE)
-/* paul merge smith begin */
-//#include <linux/mutex.h>
-#include <linux/spinlock.h>
-#include <linux/proc_fs.h>
-#include <asm/uaccess.h> 
-/* paul merge smith end */
-#endif
 #define SMSC3317GUID NV_ODM_GUID('s','m','s','c','3','3','1','7')
 
 #define MAX_CLOCKS 3
 
 #define NVODM_PORT(x) ((x) - 'a')
 #define ULPI_RESET_PORT NVODM_PORT('v')
-#define ULPI_RESET_PIN 0
-#if defined(CONFIG_TEGRA_ODM_BETELGEUSE)
+#define ULPI_RESET_PIN 0 /* Julian: Changed ULPI_RESET pin from PV1 to PV0 */
 #define ULPI_OVRCURR_PORT NVODM_PORT('u')
 #define ULPI_OVRCURR_PIN 3 
-#endif
+
 #ifdef NV_DRIVER_DEBUG
     #define NV_DRIVER_TRACE NvOsDebugPrintf
 #else
@@ -75,106 +66,16 @@ typedef struct NvOdmUsbUlpiRec
 static NvOdmServicesGpioHandle s_hGpio = NULL;
 static NvOdmGpioPinHandle s_hResetPin = NULL;
 
-#if defined(CONFIG_TEGRA_ODM_BETELGEUSE)
-static NvOdmGpioPinHandle s_hOvrrCurPin = NULL;
+//static NvOdmGpioPinHandle s_hOvrrCurPin = NULL;
+NvOdmGpioPinHandle s_hOvrrCurPin = NULL;
 
-NvU32 gUsbCurrLimitC = 1; /* initial pin state should be 1 */
-NvOsMutexHandle usbCurrLimit_lock = NULL;
-NvOdmServicesGpioIntrHandle IntrHandle = NULL;
-int i = 0;
-static struct proc_dir_entry  *proc_usbovc;
-static struct proc_dir_entry  *proc_ioctl;
-
-/* paul */
-/* get global variable gUsbCurrLimitC value and set it into /proc/usbCurrLimitInfo for user space read */
-static int tegra_usbCurrLimit_read_proc(char *page, char **start, off_t off,
-       int count, int *eof, void *data)
-{
-       int len = 0;
-
-	/*
-       NV_DRIVER_TRACE (("tegra_usbCurrLimit_read_proc:start\n"));	
-	*/
-       NvOsMutexLock(usbCurrLimit_lock);
-       len += snprintf(page+len, count-len,"%d", gUsbCurrLimitC);
-       NvOsMutexUnlock(usbCurrLimit_lock);
-
-       *eof = 1;
-    /*   
-       NV_DRIVER_TRACE (("tegra_usbCurrLimit_read_proc:end\n"));
-    */ 
-       return len;
-}
-
-static int tegra_usbCurrLimit_write_proc (struct file *file, const char *buffer, unsigned long count,
-                   void *data)
-{
-	int len = 0;
-	static char proc_buf[4];
-	if ( copy_from_user(proc_buf, buffer, count) ) {
-	        return -EFAULT;
-	}
-	if ( strncmp( proc_buf, "1", 1) == 0 )
-	{
-		gUsbCurrLimitC = 1;
-		NvOsMutexLock(usbCurrLimit_lock);
-		len += snprintf(proc_buf, count-len, "%d",gUsbCurrLimitC);
-		NvOsMutexUnlock(usbCurrLimit_lock);
-		return len;
-	}
-	else
-	{
-		NvOsDebugNprintf("tegra_usbCurrLimit_write_proc fail\n");
-		return -1;
-	}
-}       
-/* get GPIO_PU3 status and set it into global variable gUsbCurrLimitC */
-static void UsbCurLimitGpioInterruptHandler(void *arg)
-{
-	NvU32 CurrSelectPinState = 0;
-	
-	
-
-	
-	NvOdmGpioGetState(s_hGpio, s_hOvrrCurPin, &CurrSelectPinState);
-
-	NvOsDebugNprintf ("###INterrupt#####\n");
-	//gUsbCurrLimitC = ( CurrSelectPinState ) ? 1 : 0;
-	gUsbCurrLimitC = CurrSelectPinState;
-	
-	NvOsDebugNprintf ("CurrSelectPinState = %d\n",CurrSelectPinState);
-	NvOsDebugNprintf("======>i=%d, gUsbCurrLimitC=%d\n", i, gUsbCurrLimitC);
-	i = i++;
-	NvOdmGpioInterruptDone(IntrHandle);
-}
-
-
-NvU32 procfile_init(void)
-{
-	proc_usbovc = proc_mkdir("usbCurrLimitInfo" ,NULL);
-	if ( proc_usbovc == NULL )
-	return -1;
-	proc_ioctl = create_proc_entry("usbovc", S_IRWXUGO, proc_usbovc);
-	if (proc_ioctl == NULL) {
-	        NvOsDebugNprintf("Error: Could not initialize /proc/ \n");
-	        return -ENOMEM;
-	}
-	proc_ioctl->read_proc  = tegra_usbCurrLimit_read_proc;
-	proc_ioctl->write_proc = tegra_usbCurrLimit_write_proc;
-}
-/* paul merge smith end */
-#endif
 NvOdmUsbUlpiHandle NvOdmUsbUlpiOpen(NvU32 Instance)
 {
     NvOdmUsbUlpi*pDevice = NULL;
     NvU32 ClockInstances[MAX_CLOCKS];
     NvU32 ClockFrequencies[MAX_CLOCKS];
     NvU32 NumClocks;
-#if defined(CONFIG_TEGRA_ODM_BETELGEUSE)
-/* paul */
-    NvOdmInterruptHandler IntrHandler = (NvOdmInterruptHandler)UsbCurLimitGpioInterruptHandler;
-/* end */
-#endif
+
     pDevice = NvOdmOsAlloc(sizeof(NvOdmUsbUlpi));
     if(pDevice == NULL)
 		return NULL;
@@ -209,7 +110,6 @@ NvOdmUsbUlpiHandle NvOdmUsbUlpiOpen(NvU32 Instance)
         goto ExitUlpiOdm;
     }
 
-#if defined(CONFIG_TEGRA_ODM_BETELGEUSE)
     if (!s_hOvrrCurPin)
         s_hOvrrCurPin = NvOdmGpioAcquirePinHandle(s_hGpio, ULPI_OVRCURR_PORT,
 							ULPI_OVRCURR_PIN);
@@ -222,44 +122,15 @@ NvOdmUsbUlpiHandle NvOdmUsbUlpiOpen(NvU32 Instance)
 					"Not able to Acq pinhandle\n"));
         goto ExitUlpiOdm;
     }
-    NvOdmGpioConfig(s_hGpio,s_hOvrrCurPin, NvOdmGpioPinMode_InputData);
-#endif
-
     // Pull high on RESETB ( 22nd pin of smsc3315) 
     // config as out put pin
     NvOdmGpioConfig(s_hGpio,s_hResetPin, NvOdmGpioPinMode_Output);
-
+    NvOdmGpioConfig(s_hGpio,s_hOvrrCurPin, NvOdmGpioPinMode_InputData);
     // Set low to write high on ULPI_RESETB pin
     NvOdmGpioSetState(s_hGpio, s_hResetPin, 0x01);
     NvOdmGpioSetState(s_hGpio, s_hResetPin, 0x0);
     NvOdmOsSleepMS(5);
     NvOdmGpioSetState(s_hGpio, s_hResetPin, 0x01);
-
-#if defined(BUG_CONFIG_TEGRA_ODM_BETELGEUSE)
-/* paul merge smith begin */
-
-    /* create mutex for usb over current detect */
-    NvOsMutexCreate(&usbCurrLimit_lock);
-
-#if 0
-    /* create /proc/usbCurrLimitInfo for user space read */ /* S_IRUGO */
-    create_proc_read_entry("usbCurrLimitInfo", S_IRWXUGO, NULL, tegra_usbCurrLimit_read_proc, NULL);
-#else
-
-    procfile_init();
-    
-#endif
-    /* register interrupt handler for GPIO_PU3 status */
-    if (NvOdmGpioInterruptRegister(s_hGpio, &IntrHandle,
-        	s_hOvrrCurPin, NvOdmGpioPinMode_InputInterruptLow,
-        	IntrHandler, (void *)NULL, 0) == NV_FALSE)
-    {
-		NV_DRIVER_TRACE (("ERROR NvOdmGpioInterruptRegister: "
-					"Not able to register intr hdlr for s_hCurLimitPin\n"));
-    }
-
-/* paul merge smith end */
-#endif
 
     pDevice->CurrentGUID = SMSC3317GUID;
     return pDevice;

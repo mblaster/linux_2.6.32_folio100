@@ -51,6 +51,7 @@ struct tegra_cap_device_data
 	NvU32			        chip_devinfo;
 	NvBool			        bThreadAlive;
 	NvBool			        show_log;	
+	NvBool			        show_read;	
 	struct timeval		    tv;	
 };
 
@@ -61,7 +62,8 @@ static const char* parameter[] = {
 	"program=",	
 	"devinfo=",	
 	"dmi=",	
-	"regctrl=",	
+	"regctrl=",
+    "read=",		
 	"openclose=",
 };
 
@@ -72,6 +74,7 @@ static enum {
 	COMMAND_DEVINFO,     /* To read  Cap Sensor chip device information */
 	COMMAND_READ_DMI,
 	COMMAND_CTRL,
+	COMMAND_READ_VALUE,
 	COMMAND_OPENCLOSE,
 }cap_enum;
 
@@ -150,6 +153,9 @@ void change_nvodm_capsensor_settings(NvU32 command, NvS32 value)
             printk("\r\n Write Reg:  Reg %d  Value = 0x%x\n",((value>>8)&0x7f),(value&0xff));              
         else
             printk("\r\n Read Reg:   Reg %d  Vlaue = 0x%x\n",((value>>8)&0x7f),RegData);              
+		break;		
+	 case COMMAND_READ_VALUE:	 
+		cap_dev->show_read = (value == 0 ? NV_FALSE : NV_TRUE); 
 		break;											
 	case COMMAND_OPENCLOSE:
 		if (value) {
@@ -176,7 +182,14 @@ void change_nvodm_capsensor_settings(NvU32 command, NvS32 value)
 ssize_t read_sysfs_cap(struct device *dev,
 	struct device_attribute *attr, char *buf)
 {
-	ssize_t len = 0;	
+	unsigned char CapID, CapFwRev0, CapFwRev1, CapFwRev2;
+	change_nvodm_capsensor_settings(COMMAND_DEVINFO, 0);	
+	CapID = cap_dev->chip_devinfo >> 24;
+	CapFwRev2 = (cap_dev->chip_devinfo >> 16) & 0xFF;
+	CapFwRev1 = (cap_dev->chip_devinfo >> 8) & 0xFF;
+	CapFwRev0 = cap_dev->chip_devinfo & 0xFF;
+	sprintf(buf, "Cap Sensor ID = 0x%02X, FW Rev = 0x%02X%02X%02X\n", CapID, CapFwRev2, CapFwRev1, CapFwRev0);
+	ssize_t len = strlen(buf);
 	return len;
 }
 
@@ -276,7 +289,9 @@ static NvS32 tegra_cap_thread (void *pdata)
 		}else if((ButtonStatus==0)||(ButtonChange!=ButtonStatus)){
 		    key_pressed = 0;
 		}       
-
+        
+        if(ButtonChange==CAP_KEY_HOME) goto skip_combination_chk;
+        
         if(ButtonChange==CAP_KEY_SEARCH){		  
 	    
 	        if((ButtonStatus==(CAP_KEY_SEARCH|CAP_KEY_MENU))&&(ButtonChange==CAP_KEY_SEARCH)){
@@ -304,7 +319,8 @@ static NvS32 tegra_cap_thread (void *pdata)
         
         }
  #endif              
-         	    
+ 
+ skip_combination_chk:        	    
 	    switch(ButtonChange)
 	    {
 	     case CAP_KEY_SEARCH:
@@ -328,24 +344,31 @@ static NvS32 tegra_cap_thread (void *pdata)
 	    if (capsensor->show_log) {    
 	        printk("\n\n>>>> key_pressed = %d KeyEvent = 0x%x  Button Change = 0x%x  Button Status =0x%x \n",key_pressed,KeyEvent, ButtonChange,ButtonStatus);
 	    }
-       
-	    
+        
+        if (capsensor->show_read){
+	       if(key_pressed==1)
+	        printk("\n\n>>>> Reading %2d <<<<<<< \n",GetButtonReading(capsensor->hOdmAcr,ButtonChange));
+	    }
 	}
 	
 	return -1;
 }
-static int tegra_cap_early_suspend(struct platform_device *pdev, pm_message_t state)
+
+static void tegra_cap_early_suspend(struct early_suspend *h)
 {
-     struct tegra_cap_device_data *capsensor = platform_get_drvdata(pdev);
-     NvOdmCapSuspend(cap_dev->hOdmAcr);
-     return 0;
+    
+    struct tegra_cap_device_data *capsensor = container_of(h, struct tegra_cap_device_data, cap_early_suspend);
+    NvOdmCapSuspend(capsensor->hOdmAcr);
+  
+    
 }
 
-static int tegra_cap_early_resume(struct platform_device *pdev)
+static int tegra_cap_early_resume(struct early_suspend *h)
 {
-     struct tegra_cap_device_data *capsensor = platform_get_drvdata(pdev);
-     NvOdmResume(cap_dev->hOdmAcr);
-	 return 0;
+	
+    struct tegra_cap_device_data *capsensor = container_of(h, struct tegra_cap_device_data, cap_early_suspend);
+    NvOdmResume(capsensor->hOdmAcr);
+  
 }
 
 /**
@@ -414,7 +437,7 @@ static NvS32 __init tegra_cap_probe(struct platform_device *pdev)
 		goto sysfs_failed;
 	} 
      
-        capsensor->cap_early_suspend.suspend = tegra_cap_early_suspend;
+    capsensor->cap_early_suspend.suspend = tegra_cap_early_suspend;
 	capsensor->cap_early_suspend.resume  = tegra_cap_early_resume;
 	register_early_suspend(&capsensor->cap_early_suspend);
 	 

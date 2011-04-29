@@ -1,7 +1,7 @@
 #
 # Automatically generated make config: don't edit
 # Linux kernel version: 2.6.32.9
-# Thu Aug 19 19:39:21 2010
+# Wed Jul 28 12:13:30 2010
 #
 CONFIG_ARM=y
 CONFIG_SYS_SUPPORTS_APM_EMULATION=y
@@ -35,7 +35,9 @@ CONFIG_EXPERIMENTAL=y
 CONFIG_LOCK_KERNEL=y
 CONFIG_INIT_ENV_ARG_LIMIT=32
 CONFIG_LOCALVERSION=""
+# Kevin modify at 10.8.1 >>>
 # CONFIG_LOCALVERSION_AUTO is not set
+# Kevin modify at 10.8.1 <<<
 # CONFIG_SWAP is not set
 # CONFIG_SYSVIPC is not set
 # CONFIG_POSIX_MQUEUE is not set
@@ -95,7 +97,7 @@ CONFIG_FUTEX=y
 CONFIG_EPOLL=y
 # CONFIG_SIGNALFD is not set
 # CONFIG_TIMERFD is not set
-# CONFIG_EVENTFD is not set
+CONFIG_EVENTFD=y 
 CONFIG_SHMEM=y
 CONFIG_ASHMEM=y
 CONFIG_AIO=y
@@ -131,7 +133,9 @@ CONFIG_MODULES=y
 # CONFIG_MODULE_FORCE_LOAD is not set
 CONFIG_MODULE_UNLOAD=y
 # CONFIG_MODULE_FORCE_UNLOAD is not set
+# Kevin Modify at 10.8.1 >>>
 # CONFIG_MODVERSIONS is not set
+# Kevin Modify at 10.8.1 <<<
 # CONFIG_MODULE_SRCVERSION_ALL is not set
 CONFIG_STOP_MACHINE=y
 CONFIG_BLOCK=y
@@ -211,7 +215,9 @@ CONFIG_MACH_TEGRA_GENERIC=y
 CONFIG_MACH_HARMONY=y
 CONFIG_MACH_VENTANA=y
 CONFIG_TEGRA_ODM_KIT=y
+# JN Add and 10.9.5 Add >>>
 CONFIG_ARM_ERRATA_742230=y
+# JN Add and 10.9.5 Add <<<
 CONFIG_TEGRA_DEBUG_UART_NONE=y
 # CONFIG_TEGRA_DEBUG_UARTA is not set
 # CONFIG_TEGRA_DEBUG_UARTB is not set
@@ -229,17 +235,26 @@ CONFIG_TEGRA_FUSE=y
 CONFIG_TEGRA_AES=y
 CONFIG_TEGRA_AES_USER=y
 # CONFIG_TEGRA_USB_CHARGE is not set
+# YuYang Add vibrator function >>>
 CONFIG_TEGRA_ODM_VIBRATE=y
+# YuYang Add vibrator function <<<
 # CONFIG_TEGRA_USB_VBUS_DETECT_BY_PMU is not set
+# JN Add >>>
+CONFIG_TEGRA_ODM_CARVEOUT_ADJUST=y
 # CONFIG_TEGRA_LP2POLICY_DISABLED is not set
 # CONFIG_TEGRA_LP2POLICY_ENTER_IN_LC is not set
 # CONFIG_TEGRA_LP2POLICY_PERSIST_IN_LC is not set
 CONFIG_TEGRA_LP2POLICY_IGNORE_LC=y
+# JN Add <<<
 # CONFIG_TEGRA_ODM_HARMONY is not set
+# JN Add >>>
 # CONFIG_TEGRA_ODM_VENTANA is not set
+# JN Add <<<
 # CONFIG_TEGRA_ODM_WHISTLER is not set
 CONFIG_TEGRA_ODM_BETELGEUSE=y
+# Brian usb hub suspend wake >>>
 CONFIG_TEGRA_ODM_USB_HUB_INTR=y
+# Brian usb hub suspend wake <<<
 
 #
 # Processor Type
@@ -263,6 +278,9 @@ CONFIG_CPU_CP15_MMU=y
 #
 CONFIG_ARM_THUMB=y
 # CONFIG_ARM_THUMBEE is not set
+# Daniel Wang Add 10.9.5 >>>
+CONFIG_SWP_EMULATE=y
+# Daniel Wang Add 10.9.5 <<<
 # CONFIG_CPU_ICACHE_DISABLE is not set
 # CONFIG_CPU_DCACHE_DISABLE is not set
 # CONFIG_CPU_BPREDICT_DISABLE is not set
@@ -508,6 +526,9 @@ CONFIG_BT_HCIUART_H4=y
 CONFIG_BT_HCIUART_BCSP=y
 CONFIG_BT_HCIUART_LL=y
 # CONFIG_BT_HCIBCM203X is not set
+# Daniel Wang Add 10.9.5 >>>
+# CONFIG_BT_BLUESLEEP is not set
+# Daniel Wang Add 10.9.5 <<<
 # CONFIG_BT_HCIBPA10X is not set
 # CONFIG_BT_HCIBFUSB is not set
 # CONFIG_BT_HCIVHCI is not set
@@ -547,24 +568,48 @@ CONFIG_EXTRA_FIRMWARE=""
 # CONFIG_DEBUG_DRIVER is not set
 # CONFIG_DEBUG_DEVRES is not set
 # CONFIG_SYS_HYPERVISOR is not set
+# Vincent Add Temperature Sensor >>>
 CONFIG_TEGRA_TMON_PROC=y
+# Vincent Add Temperature Sensor <<<
 # CONFIG_CONNECTOR is not set
 # CONFIG_MTD is not set
 # CONFIG_PARPORT is not set
+# Daniel Wang Add 10.9.5 >>>
+# CONFIG_BLK_DEV is not set
 CONFIG_BLK_DEV=y
+# CONFIG_BLK_CPQ_DA is not set
+# CONFIG_BLK_CPQ_CISS_DA is not set
+# CONFIG_BLK_DEV_DAC960 is not set
+# CONFIG_BLK_DEV_UMEM is not set
+# CONFIG_BLK_DEV_COW_COMMON is not set
 CONFIG_BLK_DEV_LOOP=y
-CONFIG_BLK_DEV_DM=y
-CONFIG_DM_DEBUG=y
-CONFIG_DM_CRYPT=y
-CONFIG_DM_UEVENT=y
+# CONFIG_BLK_DEV_CRYPTOLOOP is not set
+# CONFIG_BLK_DEV_NBD is not set
+# CONFIG_BLK_DEV_SX8 is not set
+# CONFIG_BLK_DEV_UB is not set
+# CONFIG_BLK_DEV_RAM is not set
+# CONFIG_CDROM_PKTCDVD is not set
+# CONFIG_ATA_OVER_ETH is not set
+# CONFIG_MG_DISK is not set
+# Daniel Wang Add 10.9.5 <<<
 CONFIG_MISC_DEVICES=y
 # CONFIG_ANDROID_PMEM is not set
+# JN Remove at 10.8.1 >>>
+# CONFIG_PHANTOM is not set
+# CONFIG_SGI_IOC4 is not set
+# CONFIG_TIFM_CORE is not set
+# JN Remove at 10.8.1  <<<
 # CONFIG_ICS932S401 is not set
 # CONFIG_ENCLOSURE_SERVICES is not set
 # CONFIG_KERNEL_DEBUGGER_CORE is not set
+# JN Remove at 10.8.1 >>>
+# CONFIG_HP_ILO is not set
+# JN Remove at 10.8.1 <<<
 # CONFIG_ISL29003 is not set
-# CONFIG_UID_STAT is not set
-CONFIG_LBEE9QMB_RFKILL=y
+# JN Modify at 10.8.1 >>>
+CONFIG_UID_STAT=y
+# CONFIG_LBEE9QMB_RFKILL is not set
+# JN Modify at 10.8.1 <<<
 # CONFIG_WL127X_RFKILL is not set
 # CONFIG_APANIC is not set
 # CONFIG_C2PORT is not set
@@ -577,6 +622,9 @@ CONFIG_LBEE9QMB_RFKILL=y
 # CONFIG_EEPROM_LEGACY is not set
 # CONFIG_EEPROM_MAX6875 is not set
 # CONFIG_EEPROM_93CX6 is not set
+# JN Remove at 10.8.1 >>>
+# CONFIG_CB710_CORE is not set
+# JN Remove at 10.8.1 <<<
 CONFIG_HAVE_IDE=y
 # CONFIG_IDE is not set
 
@@ -616,13 +664,87 @@ CONFIG_SCSI_WAIT_SCAN=m
 # CONFIG_SCSI_SRP_ATTRS is not set
 CONFIG_SCSI_LOWLEVEL=y
 # CONFIG_ISCSI_TCP is not set
+# JN Remove at 10.8.1 >>>
+# CONFIG_SCSI_BNX2_ISCSI is not set
+# CONFIG_BE2ISCSI is not set
+# CONFIG_BLK_DEV_3W_XXXX_RAID is not set
+# CONFIG_SCSI_3W_9XXX is not set
+# CONFIG_SCSI_ACARD is not set
+# CONFIG_SCSI_AACRAID is not set
+# CONFIG_SCSI_AIC7XXX is not set
+# CONFIG_SCSI_AIC7XXX_OLD is not set
+# CONFIG_SCSI_AIC79XX is not set
+# CONFIG_SCSI_AIC94XX is not set
+# CONFIG_SCSI_MVSAS is not set
+# CONFIG_SCSI_DPT_I2O is not set
+# CONFIG_SCSI_ADVANSYS is not set
+# CONFIG_SCSI_ARCMSR is not set
+# CONFIG_MEGARAID_NEWGEN is not set
+# CONFIG_MEGARAID_LEGACY is not set
+# CONFIG_MEGARAID_SAS is not set
+# CONFIG_SCSI_MPT2SAS is not set
+# CONFIG_SCSI_HPTIOP is not set
+# JN Remove at 10.8.1 <<<
 # CONFIG_LIBFC is not set
 # CONFIG_LIBFCOE is not set
+# JN Remove at 10.8.1 >>>
+# CONFIG_FCOE is not set
+# CONFIG_SCSI_DMX3191D is not set
+# CONFIG_SCSI_FUTURE_DOMAIN is not set
+# CONFIG_SCSI_IPS is not set
+# CONFIG_SCSI_INITIO is not set
+# CONFIG_SCSI_INIA100 is not set
+# CONFIG_SCSI_STEX is not set
+# CONFIG_SCSI_SYM53C8XX_2 is not set
+# CONFIG_SCSI_QLOGIC_1280 is not set
+# CONFIG_SCSI_QLA_FC is not set
+# CONFIG_SCSI_QLA_ISCSI is not set
+# CONFIG_SCSI_LPFC is not set
+# CONFIG_SCSI_DC395x is not set
+# CONFIG_SCSI_DC390T is not set
+# CONFIG_SCSI_NSP32 is not set
+# JN Remove at 10.8.1 <<<
 # CONFIG_SCSI_DEBUG is not set
+# JN Remove at 10.8.1 >>>
+# CONFIG_SCSI_PMCRAID is not set
+# CONFIG_SCSI_SRP is not set
+# CONFIG_SCSI_BFA_FC is not set
+# JN Remove at 10.8.1 <<<
 # CONFIG_SCSI_DH is not set
 # CONFIG_SCSI_OSD_INITIATOR is not set
 # CONFIG_ATA is not set
+# Daniel Wang Add 10.9.5 >>>
+# CONFIG_MD is not set
 CONFIG_MD=y
+# CONFIG_BLK_DEV_MD is not set
+CONFIG_BLK_DEV_DM=y
+# CONFIG_DM_DEBUG is not set
+CONFIG_DM_CRYPT=y
+# CONFIG_DM_SNAPSHOT is not set
+# CONFIG_DM_MIRROR is not set
+# CONFIG_DM_ZERO is not set
+# CONFIG_DM_MULTIPATH is not set
+# CONFIG_DM_DELAY is not set
+CONFIG_DM_UEVENT=y
+# Daniel Wang Add 10.9.5 <<<
+# JN Remove at 10.8.1 >>>
+# CONFIG_FUSION is not set
+
+#
+# IEEE 1394 (FireWire) support
+#
+
+#
+# You can enable one or both FireWire driver stacks.
+#
+
+#
+# See the help texts for more information.
+#
+# CONFIG_FIREWIRE is not set
+# CONFIG_IEEE1394 is not set
+# CONFIG_I2O is not set
+# JN Remove at 10.8.1 <<<
 CONFIG_NETDEVICES=y
 # CONFIG_DUMMY is not set
 # CONFIG_BONDING is not set
@@ -630,10 +752,19 @@ CONFIG_NETDEVICES=y
 # CONFIG_EQUALIZER is not set
 # CONFIG_TUN is not set
 # CONFIG_VETH is not set
+# JN Remove at 10.8.1 >>>
+# CONFIG_ARCNET is not set
+# JN Remove at 10.8.1 <<<
 # CONFIG_PHYLIB is not set
 CONFIG_NET_ETHERNET=y
 CONFIG_MII=y
 # CONFIG_AX88796 is not set
+# JN Remove at 10.8.1 >>>
+# CONFIG_HAPPYMEAL is not set
+# CONFIG_SUNGEM is not set
+# CONFIG_CASSINI is not set
+# CONFIG_NET_VENDOR_3COM is not set
+# JN Remove at 10.8.1 <<<
 # CONFIG_SMC91X is not set
 # CONFIG_DM9000 is not set
 # CONFIG_ENC28J60 is not set
@@ -641,6 +772,10 @@ CONFIG_MII=y
 # CONFIG_SMC911X is not set
 # CONFIG_SMSC911X is not set
 # CONFIG_DNET is not set
+# JN Remove at 10.8.1 >>>
+# CONFIG_NET_TULIP is not set
+# CONFIG_HP100 is not set
+# JN Remove at 10.8.1 <<<
 # CONFIG_IBM_NEW_EMAC_ZMII is not set
 # CONFIG_IBM_NEW_EMAC_RGMII is not set
 # CONFIG_IBM_NEW_EMAC_TAH is not set
@@ -648,12 +783,21 @@ CONFIG_MII=y
 # CONFIG_IBM_NEW_EMAC_NO_FLOW_CTRL is not set
 # CONFIG_IBM_NEW_EMAC_MAL_CLR_ICINTSTAT is not set
 # CONFIG_IBM_NEW_EMAC_MAL_COMMON_ERR is not set
+# JN Remove at 10.8.1 >>>
+# CONFIG_NET_PCI is not set
+# JN Remove at 10.8.1 <<<
 # CONFIG_B44 is not set
 # CONFIG_KS8842 is not set
 # CONFIG_KS8851 is not set
 # CONFIG_KS8851_MLL is not set
+# JN Remove at 10.8.1 >>>
+# CONFIG_ATL2 is not set
+# JN Remove at 10.8.1 <<<
 # CONFIG_NETDEV_1000 is not set
 # CONFIG_NETDEV_10000 is not set
+# JN Remove at 10.8.1 >>>
+# CONFIG_TR is not set
+# JN Remove at 10.8.1 <<<
 CONFIG_WLAN=y
 # CONFIG_WLAN_PRE80211 is not set
 # CONFIG_WLAN_80211 is not set
@@ -665,8 +809,6 @@ CONFIG_WLAN=y
 #
 # USB Network Adapters
 #
-CONFIG_USB_BELKIN=y
-CONFIG_USB_ARMLINUX=y
 # CONFIG_USB_CATC is not set
 # CONFIG_USB_KAWETH is not set
 # CONFIG_USB_PEGASUS is not set
@@ -676,23 +818,27 @@ CONFIG_USB_USBNET=n
 CONFIG_USB_NET_CDCETHER=n
 # CONFIG_USB_NET_CDC_EEM is not set
 # CONFIG_USB_NET_DM9601 is not set
-# CONFIG_USB_NET_SMSC95XX is not set
+# CONFIG_USB_NET_SMSC95XX=n
 # CONFIG_USB_NET_GL620A is not set
 # CONFIG_USB_NET_NET1080 is not set
 # CONFIG_USB_NET_PLUSB is not set
 # CONFIG_USB_NET_MCS7830 is not set
 # CONFIG_USB_NET_RNDIS_HOST is not set
-CONFIG_USB_NET_CDC_SUBSET=n
+# CONFIG_USB_NET_CDC_SUBSET=n
 # CONFIG_USB_ALI_M5632 is not set
 # CONFIG_USB_AN2720 is not set
-CONFIG_USB_BELKIN=y
-CONFIG_USB_ARMLINUX=y
+# CONFIG_USB_BELKIN=n
+# CONFIG_USB_ARMLINUX=n
 # CONFIG_USB_EPSON2888 is not set
 # CONFIG_USB_KC2190 is not set
 # CONFIG_USB_NET_ZAURUS is not set
 # CONFIG_USB_HSO is not set
 # CONFIG_USB_NET_INT51X1 is not set
 # CONFIG_WAN is not set
+# JN Remove at 10.8.1 >>>
+# CONFIG_FDDI is not set
+# CONFIG_HIPPI is not set
+# JN Remove at 10.8.1 <<<
 CONFIG_PPP=y
 # CONFIG_PPP_MULTILINK is not set
 # CONFIG_PPP_FILTER is not set
@@ -706,6 +852,9 @@ CONFIG_PPPOL2TP=y
 CONFIG_PPPOLAC=y
 CONFIG_PPPOPNS=y
 # CONFIG_SLIP is not set
+# JN Remove at 10.8.1 >>>
+# CONFIG_NET_FC is not set
+# JN Remove at 10.8.1 <<<
 CONFIG_SLHC=y
 # CONFIG_NETCONSOLE is not set
 # CONFIG_NETPOLL is not set
@@ -778,7 +927,9 @@ CONFIG_INPUT_TOUCHSCREEN=y
 # CONFIG_TOUCHSCREEN_MK712 is not set
 # CONFIG_TOUCHSCREEN_PENMOUNT is not set
 # CONFIG_TOUCHSCREEN_SYNAPTICS_I2C_RMI is not set
+# LB Add Multi-touch driver supported >>>
 CONFIG_TOUCHSCREEN_TEGRA_ODM=y
+# LB Add Multi-touch driver supported <<<
 # CONFIG_TOUCHSCREEN_TOUCHRIGHT is not set
 # CONFIG_TOUCHSCREEN_TOUCHWIN is not set
 CONFIG_TOUCHSCREEN_USB_COMPOSITE=y
@@ -809,18 +960,21 @@ CONFIG_INPUT_MISC=y
 CONFIG_INPUT_UINPUT=y
 # CONFIG_INPUT_GPIO is not set
 # CONFIG_INPUT_GPIO_ROTARY_ENCODER is not set
+# Derick Add Gsensor >>>
 CONFIG_INPUT_TEGRA_ODM_ACCEL=y
+# Derick Add Gsensor <<<
 # CONFIG_INPUT_TEGRA_ODM_SCROLL is not set
 CONFIG_INPUT_TEGRA_ODM_ECOMPASS=y
 CONFIG_INPUT_TEGRA_ODM_EC_CIR=y
 CONFIG_INPUT_TEGRA_ODM_DOCK=y
 CONFIG_INPUT_TEGRA_ODM_CAPSENSOR=y
-
+# CONFIG_INPUT_TEGRA_ODM_OVCURRENT is not set
 #
 # Hardware I/O ports
 #
 CONFIG_SERIO=y
 CONFIG_SERIO_SERPORT=y
+# CONFIG_SERIO_PCIPS2 is not set
 CONFIG_SERIO_LIBPS2=y
 CONFIG_SERIO_RAW=y
 # CONFIG_GAMEPORT is not set
@@ -835,7 +989,15 @@ CONFIG_HW_CONSOLE=y
 CONFIG_VT_HW_CONSOLE_BINDING=y
 CONFIG_DEVMEM=y
 # CONFIG_DEVKMEM is not set
+# JN Remove at 10.8.1 >>>
+CONFIG_DEVNVMAP=y
+# CONFIG_DEVNVMAP_PARANOID is not set
+CONFIG_DEVNVMAP_RECLAIM_UNPINNED_VM=y
+# JN Remove at 10.8.1 <<<
 # CONFIG_SERIAL_NONSTANDARD is not set
+# JN Remove at 10.8.1 >>>
+# CONFIG_NOZOMI is not set
+# JN Remove at 10.8.1 <<<
 
 #
 # Serial drivers
@@ -853,24 +1015,55 @@ CONFIG_SERIAL_TEGRA=y
 # CONFIG_SERIAL_MAX3100 is not set
 CONFIG_SERIAL_CORE=y
 CONFIG_SERIAL_CORE_CONSOLE=y
+# JN Remove at 10.8.1 >>>
+# CONFIG_SERIAL_JSM is not set
+# JN Remove at 10.8.1 <<<
 CONFIG_UNIX98_PTYS=y
 # CONFIG_DEVPTS_MULTIPLE_INSTANCES is not set
 # CONFIG_LEGACY_PTYS is not set
 # CONFIG_IPMI_HANDLER is not set
 # CONFIG_HW_RANDOM is not set
 # CONFIG_R3964 is not set
+# JN Remove at 10.8.1 >>>
+# CONFIG_APPLICOM is not set
+# JN Remove at 10.8.1 <<<
 # CONFIG_RAW_DRIVER is not set
 # CONFIG_TCG_TPM is not set
+# JN Remove at 10.8.1 >>>
+CONFIG_DEVPORT=y
+# JN Remove at 10.8.1 <<<
 # CONFIG_DCC_TTY is not set
 CONFIG_I2C=y
 CONFIG_I2C_BOARDINFO=y
 CONFIG_I2C_COMPAT=y
+# Vincent DMI >>> 
 CONFIG_I2C_CHARDEV=y
+# Vincent DMI <<<
 CONFIG_I2C_HELPER_AUTO=y
 
 #
 # I2C Hardware Bus support
 #
+
+# JN Remove at 10.8.1 >>>
+#
+# PC SMBus host controller drivers
+#
+# CONFIG_I2C_ALI1535 is not set
+# CONFIG_I2C_ALI1563 is not set
+# CONFIG_I2C_ALI15X3 is not set
+# CONFIG_I2C_AMD756 is not set
+# CONFIG_I2C_AMD8111 is not set
+# CONFIG_I2C_I801 is not set
+# CONFIG_I2C_ISCH is not set
+# CONFIG_I2C_PIIX4 is not set
+# CONFIG_I2C_NFORCE2 is not set
+# CONFIG_I2C_SIS5595 is not set
+# CONFIG_I2C_SIS630 is not set
+# CONFIG_I2C_SIS96X is not set
+# CONFIG_I2C_VIA is not set
+# CONFIG_I2C_VIAPRO is not set
+# JN Remove at 10.8.1 <<<
 
 #
 # I2C system bus drivers (mostly embedded / system-on-chip)
@@ -887,6 +1080,13 @@ CONFIG_I2C_TEGRA=y
 # CONFIG_I2C_PARPORT_LIGHT is not set
 # CONFIG_I2C_TAOS_EVM is not set
 # CONFIG_I2C_TINY_USB is not set
+
+# JN Remove at 10.8.1 >>>
+#
+# Graphics adapter I2C/DDC channel drivers
+#
+# CONFIG_I2C_VOODOO3 is not set
+# JN Remove at 10.8.1 <<<
 
 #
 # Other I2C/SMBus bus drivers
@@ -944,6 +1144,10 @@ CONFIG_GPIO_SYSFS=y
 #
 # PCI GPIO expanders:
 #
+# JN Remove at 10.8.1 >>>
+# CONFIG_GPIO_BT8XX is not set
+# CONFIG_GPIO_LANGWELL is not set
+# JN Remove at 10.8.1 <<<
 
 #
 # SPI GPIO expanders:
@@ -1042,14 +1246,27 @@ CONFIG_VIDEO_CAPTURE_DRIVERS=y
 # CONFIG_VIDEO_FIXED_MINOR_RANGES is not set
 CONFIG_VIDEO_HELPER_CHIPS_AUTO=y
 # CONFIG_VIDEO_VIVI is not set
+# JN Remove at 10.8.1 >>>
+# CONFIG_VIDEO_BT848 is not set
+# JN Remove at 10.8.1 <<<
 # CONFIG_VIDEO_CPIA is not set
 # CONFIG_VIDEO_CPIA2 is not set
 # CONFIG_VIDEO_SAA5246A is not set
 # CONFIG_VIDEO_SAA5249 is not set
+# JN Remove at 10.8.1 >>>
+# CONFIG_VIDEO_STRADIS is not set
+# CONFIG_VIDEO_SAA7134 is not set
+# CONFIG_VIDEO_MXB is not set
+# CONFIG_VIDEO_HEXIUM_ORION is not set
+# CONFIG_VIDEO_HEXIUM_GEMINI is not set
+# CONFIG_VIDEO_CX88 is not set
+# CONFIG_VIDEO_IVTV is not set
+# CONFIG_VIDEO_CAFE_CCIC is not set
+# JN Remove at 10.8.1 <<<
 # CONFIG_SOC_CAMERA is not set
 CONFIG_V4L_USB_DRIVERS=y
 CONFIG_USB_VIDEO_CLASS=y
-CONFIG_USB_VIDEO_CLASS_INPUT_EVDEV=y
+# CONFIG_USB_VIDEO_CLASS_INPUT_EVDEV is not set
 CONFIG_USB_GSPCA=m
 # CONFIG_USB_M5602 is not set
 # CONFIG_USB_STV06XX is not set
@@ -1103,6 +1320,11 @@ CONFIG_USB_PWC_INPUT_EVDEV=y
 # CONFIG_USB_STKWEBCAM is not set
 # CONFIG_USB_S2255 is not set
 CONFIG_RADIO_ADAPTERS=y
+# JN Remove at 10.8.1 >>>
+# CONFIG_RADIO_GEMTEK_PCI is not set
+# CONFIG_RADIO_MAXIRADIO is not set
+# CONFIG_RADIO_MAESTRO is not set
+# JN Remove at 10.8.1 <<<
 # CONFIG_I2C_SI4713 is not set
 # CONFIG_RADIO_SI4713 is not set
 # CONFIG_USB_DSBR is not set
@@ -1114,6 +1336,10 @@ CONFIG_RADIO_ADAPTERS=y
 #
 # Graphics support
 #
+# JN Remove at 10.8.1 >>>
+CONFIG_VGA_ARB=y
+# CONFIG_DRM is not set
+# JN Remove at 10.8.1 <<<
 # CONFIG_VGASTATE is not set
 # CONFIG_VIDEO_OUTPUT_CONTROL is not set
 CONFIG_FB=y
@@ -1138,17 +1364,50 @@ CONFIG_FB_TILEBLITTING=y
 #
 # Frame buffer hardware drivers
 #
+# JN Remove at 10.8.1 >>>
+# CONFIG_FB_CIRRUS is not set
+# CONFIG_FB_PM2 is not set
+# CONFIG_FB_CYBER2000 is not set
+# CONFIG_FB_ASILIANT is not set
+# CONFIG_FB_IMSTT is not set
+# JN Remove at 10.8.1 <<<
 # CONFIG_FB_S1D13XXX is not set
+# JN Remove at 10.8.1 >>>
+# CONFIG_FB_NVIDIA is not set
+# CONFIG_FB_RIVA is not set
+CONFIG_FB_TEGRA=y
+# CONFIG_FB_MATROX is not set
+# CONFIG_FB_RADEON is not set
+# CONFIG_FB_ATY128 is not set
+# CONFIG_FB_ATY is not set
+# CONFIG_FB_S3 is not set
+# CONFIG_FB_SAVAGE is not set
+# CONFIG_FB_SIS is not set
+# CONFIG_FB_VIA is not set
+# CONFIG_FB_NEOMAGIC is not set
+# CONFIG_FB_KYRO is not set
+# CONFIG_FB_3DFX is not set
+# CONFIG_FB_VOODOO1 is not set
+# CONFIG_FB_VT8623 is not set
+# CONFIG_FB_TRIDENT is not set
+# CONFIG_FB_ARK is not set
+# CONFIG_FB_PM3 is not set
+# CONFIG_FB_CARMINE is not set
+# JN Remove at 10.8.1 <<<
 # CONFIG_FB_VIRTUAL is not set
 # CONFIG_FB_METRONOME is not set
 # CONFIG_FB_MB862XX is not set
 # CONFIG_FB_BROADSHEET is not set
+# JN Add at 10.8.1 >>>
 CONFIG_FB_TEGRA=y
+# JN Add at 10.8.1 <<<
 CONFIG_FB_TEGRA_DUMMY=y
 CONFIG_FB_TEGRA_GRHOST=y
+# JN Add at 10.8.1 >>>
 CONFIG_DEVNVMAP=y
 # CONFIG_DEVNVMAP_PARANOID is not set
 CONFIG_DEVNVMAP_RECLAIM_UNPINNED_VM=y
+# JN Add at 10.8.1 <<<
 CONFIG_BACKLIGHT_LCD_SUPPORT=y
 CONFIG_LCD_CLASS_DEVICE=y
 # CONFIG_LCD_LMS283GF05 is not set
@@ -1204,36 +1463,40 @@ CONFIG_USB_HID=y
 #
 # Special HID drivers
 #
-# CONFIG_HID_A4TECH is not set
-# CONFIG_HID_APPLE is not set
-# CONFIG_HID_BELKIN is not set
-# CONFIG_HID_CHERRY is not set
-# CONFIG_HID_CHICONY is not set
-# CONFIG_HID_CYPRESS is not set
-# CONFIG_HID_DRAGONRISE is not set
-# CONFIG_HID_EZKEY is not set
-# CONFIG_HID_KYE is not set
-# CONFIG_HID_GYRATION is not set
-# CONFIG_HID_TWINHAN is not set
-# CONFIG_HID_KENSINGTON is not set
-# CONFIG_HID_LOGITECH is not set
-# CONFIG_HID_MICROSOFT is not set
-# CONFIG_HID_MONTEREY is not set
-# CONFIG_HID_NTRIG is not set
-# CONFIG_HID_PANTHERLORD is not set
-# CONFIG_HID_PETALYNX is not set
-# CONFIG_HID_SAMSUNG is not set
-# CONFIG_HID_SONY is not set
-# CONFIG_HID_SUNPLUS is not set
-# CONFIG_HID_GREENASIA is not set
-# CONFIG_HID_SMARTJOYPLUS is not set
-# CONFIG_HID_TOPSEED is not set
-# CONFIG_HID_THRUSTMASTER is not set
-# CONFIG_HID_WACOM is not set
-# CONFIG_HID_ZEROPLUS is not set
+# Brian add at 10.8.1 >>>
+CONFIG_HID_A4TECH=y
+CONFIG_HID_APPLE=y
+CONFIG_HID_BELKIN=y
+CONFIG_HID_CHERRY=y
+CONFIG_HID_CHICONY=y
+CONFIG_HID_CYPRESS=y
+CONFIG_HID_DRAGONRISE=y
+CONFIG_HID_EZKEY=y
+CONFIG_HID_KYE=y
+CONFIG_HID_GYRATION=y
+CONFIG_HID_TWINHAN=y
+CONFIG_HID_KENSINGTON=y
+CONFIG_HID_LOGITECH=y
+CONFIG_HID_MICROSOFT=y
+CONFIG_HID_MONTEREY=y
+CONFIG_HID_NTRIG=y
+CONFIG_HID_PANTHERLORD=y
+CONFIG_HID_PETALYNX=y
+CONFIG_HID_SAMSUNG=y
+CONFIG_HID_SONY=y
+CONFIG_HID_SUNPLUS=y
+CONFIG_HID_GREENASIA=y
+CONFIG_HID_SMARTJOYPLUS=y
+CONFIG_HID_TOPSEED=y
+CONFIG_HID_THRUSTMASTER=y
+CONFIG_HID_WACOM=y
+CONFIG_HID_ZEROPLUS=y
+# Brian add at 10.8.1 <<<
 CONFIG_USB_SUPPORT=y
 CONFIG_USB_ARCH_HAS_HCD=y
+# JN Add at 10.8.1 >>>
 # CONFIG_USB_ARCH_HAS_OHCI is not set
+# JN Add at 10.8.1 <<<
 CONFIG_USB_ARCH_HAS_EHCI=y
 CONFIG_USB=y
 # CONFIG_USB_DEBUG is not set
@@ -1258,6 +1521,9 @@ CONFIG_USB_MON=y
 # USB Host Controller Drivers
 #
 # CONFIG_USB_C67X00_HCD is not set
+# JN Remove at 10.8.1 >>>
+# CONFIG_USB_XHCI_HCD is not set
+# JN Remove at 10.8.1 <<<
 CONFIG_USB_EHCI_HCD=y
 CONFIG_USB_EHCI_ROOT_HUB_TT=y
 # CONFIG_USB_EHCI_TT_NEWSCHED is not set
@@ -1265,8 +1531,15 @@ CONFIG_USB_EHCI_ROOT_HUB_TT=y
 # CONFIG_USB_ISP116X_HCD is not set
 # CONFIG_USB_ISP1760_HCD is not set
 # CONFIG_USB_ISP1362_HCD is not set
+# JN Remove at 10.8.1 >>>
+# CONFIG_USB_OHCI_HCD is not set
+# CONFIG_USB_UHCI_HCD is not set
+# JN Remove at 10.8.1 <<<
 # CONFIG_USB_SL811_HCD is not set
 # CONFIG_USB_R8A66597_HCD is not set
+# JN Remove at 10.8.1 >>>
+# CONFIG_USB_WHCI_HCD is not set
+# JN Remove at 10.8.1 <<<
 # CONFIG_USB_HWA_HCD is not set
 CONFIG_USB_TEGRA_HCD=y
 # CONFIG_USB_MUSB_HDRC is not set
@@ -1388,6 +1661,9 @@ CONFIG_USB_TEGRA_OTG=y
 # CONFIG_USB_GPIO_VBUS is not set
 # CONFIG_USB_ULPI is not set
 # CONFIG_NOP_USB_XCEIV is not set
+# JN Remove at 10.8.1 >>>
+# CONFIG_UWB is not set
+# JN Remove at 10.8.1 <<<
 CONFIG_MMC=y
 CONFIG_EMBEDDED_MMC_START_OFFSET=y
 # CONFIG_MMC_DEBUG is not set
@@ -1401,7 +1677,9 @@ CONFIG_MMC_UNSAFE_RESUME=y
 CONFIG_MMC_BLOCK=y
 CONFIG_MMC_BLOCK_BOUNCE=y
 # CONFIG_MMC_BLOCK_DEFERRED_RESUME is not set
+# JN Add at 10.8.1 >>>
 # CONFIG_MMC_BLOCK_DEVICE_NUMBERING is not set
+# JN Add at 10.8.1 <<<
 # CONFIG_SDIO_UART is not set
 # CONFIG_MMC_TEST is not set
 
@@ -1409,15 +1687,26 @@ CONFIG_MMC_BLOCK_BOUNCE=y
 # MMC/SD/SDIO Host Controller Drivers
 #
 CONFIG_MMC_SDHCI=y
+# JN Remove at 10.8.1 >>>
+# CONFIG_MMC_SDHCI_PCI is not set
+# JN Remove at 10.8.1 <<<
 CONFIG_MMC_SDHCI_TEGRA=y
 # CONFIG_MMC_SDHCI_PLTFM is not set
 # CONFIG_MMC_AT91 is not set
 # CONFIG_MMC_ATMELMCI is not set
+# JN Remove at 10.8.1 >>>
+# CONFIG_MMC_TIFM_SD is not set
+# CONFIG_MMC_CB710 is not set
+# CONFIG_MMC_VIA_SDMMC is not set
+# JN Remove at 10.8.1 <<<
 # CONFIG_MEMSTICK is not set
 # CONFIG_NEW_LEDS is not set
 CONFIG_SWITCH=y
 # CONFIG_SWITCH_GPIO is not set
 # CONFIG_ACCESSIBILITY is not set
+# JN Remove at 10.8.1 >>>
+# CONFIG_INFINIBAND is not set
+# JN Remove at 10.8.1 <<<
 CONFIG_RTC_LIB=y
 CONFIG_RTC_CLASS=y
 CONFIG_RTC_HCTOSYS=y
@@ -1446,7 +1735,9 @@ CONFIG_RTC_INTF_ALARM_DEV=y
 # CONFIG_RTC_DRV_ISL1208 is not set
 # CONFIG_RTC_DRV_X1205 is not set
 CONFIG_RTC_DRV_TEGRA_ODM=y
+# Vincent Remove at 10.8.1 >>>
 # CONFIG_RTC_DRV_TEGRA is not set
+# Vincent Remove at 10.8.1 >>>
 # CONFIG_RTC_DRV_PCF8563 is not set
 # CONFIG_RTC_DRV_PCF8583 is not set
 # CONFIG_RTC_DRV_M41T80 is not set
@@ -1499,6 +1790,12 @@ CONFIG_STAGING=y
 # CONFIG_ECHO is not set
 # CONFIG_COMEDI is not set
 # CONFIG_ASUS_OLED is not set
+# JN Remove at 10.8.1 >>>
+# CONFIG_ALTERA_PCIE_CHDMA is not set
+# CONFIG_RTL8187SE is not set
+# CONFIG_RTL8192SU is not set
+# CONFIG_RTL8192E is not set
+# JN Remove at 10.8.1 <<<
 # CONFIG_INPUT_MIMIO is not set
 # CONFIG_TRANZPORT is not set
 
@@ -1516,6 +1813,7 @@ CONFIG_ANDROID_TIMED_OUTPUT=y
 CONFIG_ANDROID_TIMED_GPIO=y
 CONFIG_ANDROID_LOW_MEMORY_KILLER=y
 
+
 #
 # Qualcomm MSM Camera And Video
 #
@@ -1523,9 +1821,19 @@ CONFIG_ANDROID_LOW_MEMORY_KILLER=y
 #
 # Camera Sensor Selection
 #
+# Daniel Wang 10.9.5 Add >>>
+# CONFIG_DST is not set
+# Daniel Wang 10.9.5 Add <<<
 # CONFIG_POHMELFS is not set
+# JN Remove at 10.8.1 >>>
+# CONFIG_B3DFG is not set
+# CONFIG_VT6655 is not set
+# JN Remove at 10.8.1 <<<
 # CONFIG_VT6656 is not set
 # CONFIG_FB_UDL is not set
+# JN Remove at 10.8.1 >>>
+# CONFIG_VME_BUS is not set
+# JN Remove at 10.8.1 <<<
 
 #
 # RAR Register Driver
@@ -1765,7 +2073,6 @@ CONFIG_KEYS=y
 # CONFIG_SECURITY is not set
 # CONFIG_SECURITYFS is not set
 # CONFIG_SECURITY_FILE_CAPABILITIES is not set
-# CONFIG_CRYPTO is not set
 CONFIG_CRYPTO=y
 CONFIG_CRYPTO_ALGAPI=y
 CONFIG_CRYPTO_ALGAPI2=y
@@ -1775,9 +2082,8 @@ CONFIG_CRYPTO_BLKCIPHER=y
 CONFIG_CRYPTO_BLKCIPHER2=y
 CONFIG_CRYPTO_HASH=y
 CONFIG_CRYPTO_HASH2=y
-CONFIG_CRYPTO_RNG=y
 CONFIG_CRYPTO_RNG2=y
-CONFIG_CRYPTO_RCOMP=y
+CONFIG_CRYPTO_PCOMP=y
 CONFIG_CRYPTO_MANAGER=y
 CONFIG_CRYPTO_MANAGER2=y
 # CONFIG_CRYPTO_GF128MUL is not set
@@ -1839,7 +2145,7 @@ CONFIG_CRYPTO_DEFLATE=y
 #
 # Random Number Generation
 #
-CONFIG_CRYPTO_ANSI_CPRNG=m
+# CONFIG_CRYPTO_ANSI_CPRNG is not set
 CONFIG_CRYPTO_HW=y
 CONFIG_BINARY_PRINTF=y
 
@@ -1856,7 +2162,14 @@ CONFIG_CRC32=y
 # CONFIG_CRC7 is not set
 # CONFIG_LIBCRC32C is not set
 CONFIG_ZLIB_INFLATE=y
+# Daniel Wang Add 10.9.5 >>>
+CONFIG_ZLIB_DEFLATE=y
+# Daniel Wang Add 10.9.5 <<<
 CONFIG_DECOMPRESS_GZIP=y
+# Daniel Wang Add 10.9.5 >>>
+CONFIG_TEXTSEARCH=y
+CONFIG_TEXTSEARCH_KMP=y
+# Daniel Wang Add 10.9.5 <<<
 CONFIG_HAS_IOMEM=y
 CONFIG_HAS_IOPORT=y
 CONFIG_HAS_DMA=y

@@ -730,6 +730,17 @@ static int tegra_suspend_enter(suspend_state_t state)
 	return 0;
 }
 
+#if defined(CONFIG_TEGRA_ODM_BETELGEUSE)
+extern void tegra_board_nvodm_end(void);
+static void tegra_suspend_end(void){
+   /*
+    * fixed by doyle
+    * as early resume, camera device and v4l2 can be resumed 
+    */
+   tegra_board_nvodm_end();
+}
+#endif
+
 static struct platform_suspend_ops tegra_suspend_ops = {
 	.valid		= suspend_valid_only_mem,
 	.prepare	= tegra_suspend_prepare,
@@ -737,6 +748,9 @@ static struct platform_suspend_ops tegra_suspend_ops = {
 	.prepare_late	= tegra_suspend_prepare_late,
 	.wake		= tegra_suspend_wake,
 	.enter		= tegra_suspend_enter,
+#if defined(CONFIG_TEGRA_ODM_BETELGEUSE)
+	.end		= tegra_suspend_end,
+#endif
 };
 #endif
 

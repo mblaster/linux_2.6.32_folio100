@@ -73,6 +73,7 @@ NvOdmSdio *pDeviceATH;
 
 static void NvOdmSetPowerOnSdio(NvOdmSdioHandle pDevice, NvBool IsEnable);
 static NvBool SdioOdmWlanSetPowerOn(NvOdmSdioHandle hOdmSdio, NvBool IsEnable);
+
 #if 1
 void ATHSetPowerOn(int IsEnable)
 {
@@ -121,11 +122,10 @@ printk("*** %s: power off\n", __func__);
 	
         NvOdmGpioSetState(hOdmSdio->hGpio, hOdmSdio->hResetPin, 0x0);    //RST -> Low
      }
+
     return NV_TRUE;
 }
 
-
-	
 NvOdmSdioHandle NvOdmSdioOpen(NvU32 Instance)
 {
     static NvOdmSdio *pDevice = NULL;

@@ -1253,7 +1253,7 @@ static int fsl_pullup(struct usb_gadget *gadget, int is_on)
 /* defined in gadget.h */
 static struct usb_gadget_ops fsl_gadget_ops = {
 	.get_frame = fsl_get_frame,
-#ifndef CONFIG_ARCH_TEGRA
+#ifndef CONFIG_USB_ANDROID
 	.wakeup = fsl_wakeup,
 #endif
 /*	.set_selfpowered = fsl_set_selfpowered,	*/ /* Always selfpowered */

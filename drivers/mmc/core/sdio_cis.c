@@ -24,9 +24,6 @@
 #include "sdio_ops.h"
 
 /* ATHENV */
-//#include <linux/dma-mapping.h>
-//#include <linux/earlysuspend.h>
-//#include <mach/dma.h>
 #define ATHR_MANUF_CODE                 0x271
 #define ATHR_MANUF_ID                   0x301
 /* ATHENV */

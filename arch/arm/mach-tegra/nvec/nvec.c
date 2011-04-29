@@ -179,10 +179,9 @@ NvEcPrivPowerSuspendHook(
     req.Payload[0] = NVEC_SLEEP_GLOBAL_REPORT_ENABLE_0_ACTION_DISABLE;
 
     NV_CHECK_ERROR( NvEcSendRequest(hEc, &req, &resp, sizeof(req), sizeof(resp)) );
-    if ( resp.Status != NvEcStatus_Success ) {
-NvOsDebugPrintf("ec_rs NvEcPrivPowerSuspendHook GLOBAL error Status = 0x%x\n", resp.Status);    
+    
+    if ( resp.Status != NvEcStatus_Success )
         return NvError_InvalidState;
-    }
     
     // instruct EC to go to sleep
 
@@ -194,11 +193,9 @@ NvOsDebugPrintf("ec_rs NvEcPrivPowerSuspendHook GLOBAL error Status = 0x%x\n", r
     req.NumPayloadBytes = 0;
 
     NV_CHECK_ERROR( NvEcSendRequest(hEc, &req, &resp, sizeof(req), sizeof(resp)) );
-NvOsDebugPrintf("ec_rs NvEcPrivPowerSuspendHook Sleep Subtype = 0x%x\n", Subtype);    
-    if ( resp.Status != NvEcStatus_Success ) {
-NvOsDebugPrintf("ec_rs NvEcPrivPowerSuspendHook Sleep erroe Status = 0x%x\n", resp.Status);    
+    
+    if ( resp.Status != NvEcStatus_Success )
         return NvError_InvalidState;
-    }
 #endif // ENABLE_POWER_MODES
     
     DISP_MESSAGE(("NvEcPrivPowerSuspendHook: Exit success\n"));
@@ -1573,13 +1570,14 @@ NvError NvEcPowerResume(void)
     {
 NvOsDebugPrintf("ec_rs NvEcPowerResume 1\n");
         NV_CHECK_ERROR_CLEANUP( NvEcTransportPowerResume(ec->transport) );
-NvOsDebugPrintf("ec_rs NvEcPowerResume 2\n");
+
         ec->powerState = NV_TRUE;
         ec->EnterLowPowerState = NV_FALSE;
         // Signal priv thread to get out of power suspend.
         NvOsSemaphoreSignal(ec->LowPowerExitSema);
         // Perform post-resume EC operations
         NvEcPrivPowerResumeHook(ec->hEc);
+NvOsDebugPrintf("ec_rs NvEcPowerResume 2\n");
     }
 
 fail:

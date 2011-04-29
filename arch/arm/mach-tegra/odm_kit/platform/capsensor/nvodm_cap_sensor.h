@@ -78,7 +78,9 @@ extern "C"
 #define CAPSENSOR_MODE_NORMAL         0
 #define CAPSENSOR_MODE_SLEEP          1
 
-#define CAPSENSOR_CHIP_ID      0x01       // RO - device identification
+#define CAPSENSOR_CHIP_ID      0x01        // RO - device identification
+#define FW_REV_ID_1            0x01000200  // FW reversion identification
+#define FW_REV_ID_0            0x01000108  // FW reversion identification
 
 // Timeout for I2C transaction.
 enum { I2C_CAPSENSOR_TRANSACTION_TIMEOUT = 1000 };

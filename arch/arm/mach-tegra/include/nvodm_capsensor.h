@@ -118,6 +118,8 @@ NvOdmCapSuspend(NvOdmCapHandle hDevice);
 NvBool
 NvOdmResume(NvOdmCapHandle hDevice);
 
+NvU8 
+GetButtonReading(NvOdmCapHandle hDevice, NvU32 value);
 
 #if defined(__cplusplus)
 }

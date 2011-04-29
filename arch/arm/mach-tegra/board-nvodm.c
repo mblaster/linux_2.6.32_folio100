@@ -31,17 +31,7 @@
 #include <linux/gpio.h>
 #include <linux/console.h>
 #include <linux/reboot.h>
-#include <linux/delay.h>
-#include <linux/i2c.h>
 #include <linux/kobject.h>
-
-#ifdef CONFIG_TOUCHSCREEN_PANJIT_I2C
-#include <linux/i2c/panjit_ts.h>
-#endif
-
-#ifdef CONFIG_TOUCHSCREEN_ATMEL_MT_T9
-#include <linux/i2c/atmel_maxtouch.h>
-#endif
 
 #include <mach/iomap.h>
 #include <mach/io.h>
@@ -98,21 +88,13 @@
 #include <linux/earlysuspend.h>
 #include "odm_kit/adaptations/pmu/tps6586x/nvodm_pmu_tps6586x_supply_info_table.h"
 NvOdmServicesPmuHandle s_hPmuServices;
-
-#include <linux/usb.h>
-#include "../../../drivers/usb/core/hcd.h"
-#include "../../../drivers/usb/core/usb.h"
-
-enum udev_pm_level{udev_level_on , udev_level_auto ,udev_level_suspend};
-
-static enum udev_pm_level s_camera_level=udev_level_on;
-static enum udev_pm_level s_camera_usb_level=udev_level_auto;
-static int s_camera_usb_autosuspend=2;
+static int cond_camera_sate=0;	// Record current state is either CamSuppend or CamResume:
+				//	cond_camera_sate=0 :initial value ; 
+				//	cond_camera_sate=1 :CamSuppend ; 
+				//	cond_camera_sate=2 :CamResume
 #endif
 
-NvBool IsBoardTango(void) {
-  return NV_FALSE;
-}
+extern NvBool IsBoardTango(void);
 NvRmGpioHandle s_hGpioGlobal;
 
 struct debug_port_data {
@@ -241,7 +223,6 @@ static void tegra_debug_port_resume(void)
 	tegra_pinmux_config_tristate_table(uart_debug_port.pinmux,
 				uart_debug_port.nr_pins, TEGRA_TRI_NORMAL);
 }
-
 
 #ifdef CONFIG_MMC_SDHCI_TEGRA
 extern struct tegra_nand_platform tegra_nand_plat;
@@ -400,7 +381,7 @@ static void __init tegra_setup_sdhci(void) {
 		plat->is_removable = prop->IsCardRemovable;
 		plat->is_always_on = prop->AlwaysON;
 
-#ifdef CONFIG_MACH_VENTANA
+#ifdef CONFIG_TEGRA_VENTANA_WIFI
 		if (prop->usage == NvOdmQuerySdioSlotUsage_wlan)
 			plat->register_status_notify =
 				ventana_wifi_status_register;
@@ -1203,82 +1184,6 @@ static struct platform_device tegra_touch_device = {
 };
 #endif
 
-#ifdef CONFIG_TOUCHSCREEN_PANJIT_I2C
-static struct panjit_i2c_ts_platform_data panjit_data = {
-	.gpio_reset = TEGRA_GPIO_PQ7,
-};
-
-static const struct i2c_board_info ventana_i2c_bus1_touch_info[] = {
-	{
-	 I2C_BOARD_INFO("panjit_touch", 0x3),
-	 .irq = TEGRA_GPIO_TO_IRQ(TEGRA_GPIO_PV6),
-	 .platform_data = &panjit_data,
-	 },
-};
-
-static int __init ventana_touch_init_panjit(void)
-{
-	tegra_gpio_enable(TEGRA_GPIO_PV6);	/* FIXME:  Ventana-specific GPIO assignment	*/
-	tegra_gpio_enable(TEGRA_GPIO_PQ7);	/* FIXME:  Ventana-specific GPIO assignment	*/
-	i2c_register_board_info(0, ventana_i2c_bus1_touch_info, 1);
-
-	return 0;
-}
-#endif
-
-#ifdef CONFIG_TOUCHSCREEN_ATMEL_MT_T9
-/* Atmel MaxTouch touchscreen              Driver data */
-/*-----------------------------------------------------*/
-/*
- * Reads the CHANGELINE state; interrupt is valid if the changeline
- * is low.
- */
-static u8 read_chg()
-{
-	return gpio_get_value(TEGRA_GPIO_PV6);
-}
-
-static u8 valid_interrupt()
-{
-	return !read_chg();
-}
-
-static struct mxt_platform_data Atmel_mxt_info = {
-	/* Maximum number of simultaneous touches to report. */
-	.numtouch = 10,
-	// TODO: no need for any hw-specific things at init/exit?
-	.init_platform_hw = NULL,
-	.exit_platform_hw = NULL,
-	.max_x = 1366,
-	.max_y = 768,
-	.valid_interrupt = &valid_interrupt,
-	.read_chg = &read_chg,
-};
-
-static struct i2c_board_info __initdata i2c_info[] = {
-	{
-	 I2C_BOARD_INFO("maXTouch", MXT_I2C_ADDRESS),
-	 .irq = TEGRA_GPIO_TO_IRQ(TEGRA_GPIO_PV6),
-	 .platform_data = &Atmel_mxt_info,
-	 },
-};
-
-static int __init ventana_touch_init_atmel(void)
-{
-	tegra_gpio_enable(TEGRA_GPIO_PV6);	/* FIXME:  Ventana-specific GPIO assignment	*/
-	tegra_gpio_enable(TEGRA_GPIO_PQ7);	/* FIXME:  Ventana-specific GPIO assignment	*/
-
-	gpio_set_value(TEGRA_GPIO_PQ7, 0);
-	msleep(1);
-	gpio_set_value(TEGRA_GPIO_PQ7, 1);
-	msleep(100);
-
-	i2c_register_board_info(0, i2c_info, 1);
-
-	return 0;
-}
-#endif
-
 #ifdef CONFIG_INPUT_TEGRA_ODM_ACCEL
 static struct platform_device tegra_accelerometer_device = {
 	.name = "lsm303dlh_acc",
@@ -1290,6 +1195,13 @@ static struct platform_device tegra_accelerometer_device = {
 static struct platform_device tegra_scrollwheel_device = {
 	.name = "tegra_scrollwheel",
 	.id   = -1,
+};
+#endif
+
+#ifdef CONFIG_TEGRA_ODM_VIBRATE
+static struct platform_device tegra_vibrator_device = {
+	.name = "tegra_vibrator",
+	.id = -1,
 };
 #endif
 
@@ -1314,6 +1226,14 @@ static struct platform_device tegra_dock_device =
 static struct platform_device tegra_capsensor_device =
 {
     .name = "tegra_capsensor",
+    .id   = -1,
+};
+#endif
+
+#ifdef CONFIG_INPUT_TEGRA_ODM_OVCURRENT
+static struct platform_device tegra_usbovc_device =
+{
+    .name = "tegra_overcurrent",
     .id   = -1,
 };
 #endif
@@ -1363,6 +1283,9 @@ static struct platform_device *nvodm_devices[] __initdata = {
 #ifdef CONFIG_INPUT_TEGRA_ODM_ACCEL
 	&tegra_accelerometer_device,
 #endif
+#ifdef CONFIG_TEGRA_ODM_VIBRATE
+	&tegra_vibrator_device,
+#endif
 #ifdef CONFIG_INPUT_TEGRA_ODM_CAPSENSOR
 	&tegra_capsensor_device,
 #endif
@@ -1372,6 +1295,10 @@ static struct platform_device *nvodm_devices[] __initdata = {
 #ifdef CONFIG_INPUT_TEGRA_ODM_DOCK
 	&tegra_dock_device,
 #endif
+
+#ifdef CONFIG_INPUT_TEGRA_ODM_OVCURRENT
+	&tegra_usbovc_device,
+#endif 
 
 };
 
@@ -1812,6 +1739,14 @@ static void __init tegra_setup_suspend(void)
 
 	while (nr_wake--) {
 		unsigned int pad = w->WakeupPadNumber;
+
+#ifdef CONFIG_TEGRA_BATTERY_NVEC
+		// pad 24 (gpio_pv2) on harmony should not be enabled as wake-up event
+		// as battery charging current causes spurious events on this line and
+		// thus causes un-expected wake-up from LP0
+		if ((pad == 24) && !IsBoardTango())
+			continue;
+#endif
 		if (pad < ARRAY_SIZE(wakepad_irq) && w->enable)
 			enable_irq_wake(wakepad_irq[pad]);
 
@@ -1992,8 +1927,7 @@ procfile_dmistatus_read(char *buffer,
               char **buffer_location,
               off_t offset, int buffer_length, int *eof, void *data)
 {
-	int ret;
-	int len = 0;
+	int ret;	
 	        
 	if (offset > 0) {
 	        /* we have finished to read, return 0 */
@@ -2056,8 +1990,7 @@ procfile_dmiinfo_read(char *buffer,
               char **buffer_location,
               off_t offset, int buffer_length, int *eof, void *data)
 {
-	int ret;
-	int len = 0;
+	int ret;	
 	        
 	if (offset > 0) {
 	        /* we have finished to read, return 0 */
@@ -2120,12 +2053,11 @@ int proc_dmicache_init(void)
 	return 0;       /* everything is ok */
 }
 
-procfile_ismediawork_read(char *buffer,
+int procfile_ismediawork_read(char *buffer,
               char **buffer_location,
               off_t offset, int buffer_length, int *eof, void *data)
 {
     int ret;
-    int len = 0;
 
 	if (offset > 0) {
         ret  = 0;
@@ -2231,237 +2163,25 @@ ErrorExit:
     return;
 }
 
-/*
- *   DESCRIPTION:
- *         Set camera's configuation including 'power/level' and 'power/autosuspend' and try to show their inforamtion
- *
- *   VERSION:
- *         2010/09/23 -- crated by doyle
- */
-
-// be revised from 'drivers\usb\core\sysfs.c' [ show_level ]
-// "struct device *dev --> struct usb_device *udev" : fixed by doyle , 2010/09/24
-//
-static enum udev_pm_level
-udev_get_level(struct usb_device *udev)
-{
-	enum udev_pm_level p = udev_level_auto;
-
-	if (udev->state == USB_STATE_SUSPENDED) {
-		if (udev->autoresume_disabled)
-			p = udev_level_suspend;
-	} else {
-		if (udev->autosuspend_disabled)
-			p = udev_level_on;
-	}
-
-	return p;
-}
-
-// be revised from 'drivers\usb\core\sysfs.c' [ set_level ]
-// "struct device *dev --> struct usb_device *udev" : fixed by doyle , 2010/09/24
-//
-static int
-udev_set_level(struct usb_device *udev,
-	enum udev_pm_level p)
-{
-	int rc = 0;
-	int old_autosuspend_disabled, old_autoresume_disabled;
-
-	usb_lock_device(udev);
-
-	old_autosuspend_disabled = udev->autosuspend_disabled;
-	old_autoresume_disabled = udev->autoresume_disabled;
-
-	/* Setting the flags without calling usb_pm_lock is a subject to
-	 * races, but who cares...
-	 */
-	if (p==udev_level_on) {
-		udev->autosuspend_disabled = 1;
-		udev->autoresume_disabled = 0;
-		rc = usb_external_resume_device(udev, PMSG_USER_RESUME);
-
-	} else if (p==udev_level_auto) {
-		udev->autosuspend_disabled = 0;
-		udev->autoresume_disabled = 0;
-		rc = usb_external_resume_device(udev, PMSG_USER_RESUME);
-
-	} else if (p==udev_level_suspend) {
-		udev->autosuspend_disabled = 0;
-		udev->autoresume_disabled = 1;
-		rc = usb_external_suspend_device(udev, PMSG_USER_SUSPEND);
-
-	} else
-		rc = -EINVAL;
-
-	if (rc) {
-		udev->autosuspend_disabled = old_autosuspend_disabled;
-		udev->autoresume_disabled = old_autoresume_disabled;
-	}
-	usb_unlock_device(udev);
-
-	return rc;
-}
-
-// be revised from 'drivers\usb\core\sysfs.c' [ get_autosuspend ]
-// "struct device *dev --> struct usb_device *udev" : fixed by doyle , 2010/09/24
-//
-static int
-udev_get_autosuspend(struct usb_device *udev)
-{
-	return ( udev->autosuspend_delay / HZ );
-}
-
-// be revised from 'drivers\usb\core\sysfs.c' [ set_autosuspend ]
-// "struct device *dev --> struct usb_device *udev" : fixed by doyle , 2010/09/24
-//
-static int
-udev_set_autosuspend(struct usb_device *udev,
-		int value)
-{
-	if ( value >= INT_MAX/HZ ||	value <= - INT_MAX/HZ)
-		return -EINVAL;
-	value *= HZ;
-
-	udev->autosuspend_delay = value;
-	if (value >= 0)
-		usb_try_autosuspend_device(udev);
-	else {
-		if (usb_autoresume_device(udev) == 0)
-			usb_autosuspend_device(udev);
-	}
-
-	return 0;
-}
-
-//Get usb device of camera and usb(hold controller)
-//Input parameter: (1) const platform device ; (2) struct usb_device pointer of camera ; (3) struct usb_device pointer of usb(hold controller) ; 
-//Output: void
-//Creater: 2010/09/23 doyle
-//
-static void
-CamGetUsbDevice(struct platform_device const *pdev ,struct usb_device **rhdev_camera , struct usb_device **rhdev_usb  )
-{
-	//Get hcd
-	struct usb_hcd *hcd=(struct usb_hcd *) dev_get_drvdata( &pdev->dev );
-	//Get rhdev
-	*rhdev_usb=hcd->self.root_hub;
-	*rhdev_camera=(*rhdev_usb)->children[0];
-}
-
-//As suspend or display false  happen , set camera's config including camera's level , camera usb's level ,and camera usb's autosuspend 
-//Input parameter: (1) struct usb_device pointer of camera ; (2) struct usb_device pointer of usb(hold controller) ; 
-//Output: void
-//Creater: 2010/09/23 doyle
-//
-static void
-CamSetSuspendConfig(struct usb_device *rhdev_usb ,  struct usb_device *rhdev_camera){
-
-	enum udev_pm_level tmp_config;
-	int tmp_auto_config;
-
-	// camera's level set ,as suspend or display false  happen :
-	//    (1) if current camera's level is not 'suspend' , the camera's level will set as  'suspend' , and record its config value
-	//    (2) otherwise , it do nothing
-	//
-	tmp_config=udev_get_level( rhdev_camera);
-	if ( tmp_config != udev_level_suspend)
-	{
-		udev_set_level( rhdev_camera , udev_level_suspend);
-		s_camera_level=tmp_config;
-	}
-
-	// camera usb's level set ,as suspend or display false  happen :
-	//    (1) if current camera usb's level is not 'suspend' , the camera usb's level will set as  'suspend' , and record its config value
-	//    (2) otherwise , it do nothing
-	//
-	tmp_config=udev_get_level( rhdev_usb );
-	if ( tmp_config != udev_level_suspend )
-	{
-		udev_set_level( rhdev_usb , udev_level_suspend);
-		s_camera_usb_level=tmp_config;
-	}
-
-	// camera usb's autosuspend set ,as suspend or display false  happen :
-	//    (1) if current camera usb's autosuspend is not '-1' , the camera usb's level will set as  '-1' , and record its config value
-	//    (2) otherwise , it do nothing
-	//
-	tmp_auto_config=udev_get_autosuspend( rhdev_usb );
-	if ( tmp_auto_config != -1 )
-	{
-		udev_set_autosuspend( rhdev_usb , tmp_auto_config);
-		s_camera_usb_autosuspend=tmp_auto_config;
-	}
-}
-
-//As resume  happen , set camera's config including camera's level , camera usb's level ,and camera usb's autosuspend 
-//Input parameter: (1) struct usb_device pointer of camera ; (2) struct usb_device pointer of usb(hold controller) ; 
-//Output: void
-//Creater: 2010/09/23 doyle
-//
-static void
-CamSetResumeConfig(struct usb_device *rhdev_usb ,  struct usb_device *rhdev_camera){
-
-	enum udev_pm_level tmp_config;
-	int tmp_auto_config;
-
-	// camera usb's level set ,as resume  happen :
-	//    (1) if current camera usb's level is 'suspend' , then:
-	//            (1-1) the camera usb's level will set as  pre-value
-	//            (1-2) inspect and set the camera's level
-	//    (2) otherwise , it do nothing
-	//
-	tmp_config=udev_get_level( rhdev_usb );
-	if ( tmp_config == udev_level_suspend )
-	{
-		udev_set_level( rhdev_usb , s_camera_usb_level);
-
-		// camera's level set ,as resume  happen :
-		//    (1) if current camera's level is 'suspend' , the camera's level will set as  pre-value
-		//    (2) otherwise , it do nothing
-		//
-		tmp_config=udev_get_level( rhdev_camera );
-		if ( tmp_config == udev_level_suspend )
-		{
-			udev_set_level( rhdev_camera , s_camera_level );
-		}
-	}
-
-	// camera usb's level set ,as resume  happen :
-	//    (1) if current camera usb's level is 'suspend' , the camera usb's level will set as  pre-value
-	//    (2) otherwise , it do nothing
-	//
-	tmp_auto_config=udev_get_autosuspend( rhdev_usb);
-	if ( tmp_auto_config == -1 )
-	{
-		udev_set_autosuspend( rhdev_usb , s_camera_usb_autosuspend);
-	}
-}
-
+void betelgeuse_camera_do_pm(struct platform_device *pdev ,int event);
 static void CamSuspend(struct early_suspend *h)
 {
-	struct usb_device *rhdev_usb = NULL;
-	struct usb_device *rhdev_camera = NULL;
+    if ( cond_camera_sate==1 )return ;
 
-	CamGetUsbDevice( &tegra_hcd[1] , &rhdev_camera , &rhdev_usb );
+    betelgeuse_camera_do_pm(&tegra_hcd[1] ,PM_EVENT_SUSPEND );
+    NvOdmServicesPmuSetVoltage(s_hPmuServices, Ext_SWITCHPmuSupply_CamPwdn, NVODM_VOLTAGE_OFF, NULL);
 
-	if (rhdev_usb && rhdev_camera)
-	{
-		CamSetSuspendConfig(rhdev_usb , rhdev_camera);
-		NvOdmServicesPmuSetVoltage(s_hPmuServices, Ext_SWITCHPmuSupply_CamPwdn, NVODM_VOLTAGE_OFF, NULL);
-	}
+    cond_camera_sate=1;
 }
 
 static void CamResume(struct early_suspend *h)
 {
-	struct usb_device *rhdev_usb = NULL;
-	struct usb_device *rhdev_camera = NULL;
+    if ( cond_camera_sate==2 )return ;
 
 	NvOdmServicesPmuSetVoltage(s_hPmuServices, Ext_SWITCHPmuSupply_CamPwdn, 3300, NULL);
+    betelgeuse_camera_do_pm(&tegra_hcd[1] ,PM_EVENT_RESUME );
 
-	CamGetUsbDevice( &tegra_hcd[1] , &rhdev_camera , &rhdev_usb );
-	if (rhdev_usb && rhdev_camera)
-	CamSetResumeConfig(rhdev_usb , rhdev_camera);
+    cond_camera_sate=2;
 }
 
 static struct early_suspend CamEarlySuspend = {
@@ -2514,7 +2234,7 @@ static int tegra_pcbid_read_proc(char *page, char **start, off_t off, int count,
 }
 #endif 
 
-#if defined(CONFIG_TEGRA_ODM_USB_HUB_INTR)	
+#if defined(CONFIG_TEGRA_ODM_USB_HUB_INTR)
 /*
     USB HUB SUSPEND PIN handle for hotplug
 */
@@ -2526,7 +2246,7 @@ static NvOdmServicesGpioIntrHandle s_hUsbHubIntrHandle = NULL;
 /* get GPIO_PW2 status  */
 static void tegra_usb_hub_hotplug_intr_hdr(void *arg)
 {
-	NvU32 pinState = 0;
+	
 	int ret = -1;
 
 	ret = send_usb_hub_uevent_sock();
@@ -2615,11 +2335,6 @@ ErrorExit:
 #endif
 void __init tegra_setup_nvodm(bool standard_i2c, bool standard_spi)
 {
-#if	defined(CONFIG_TOUCHSCREEN_PANJIT_I2C) && \
-	defined(CONFIG_TOUCHSCREEN_ATMEL_MT_T9)
-	NvOdmBoardInfo	BoardInfo;
-#endif
-
 	NvRmGpioOpen(s_hRmGlobal, &s_hGpioGlobal);
 	tegra_setup_debug_uart();
 	tegra_setup_hcd();
@@ -2629,7 +2344,7 @@ void __init tegra_setup_nvodm(bool standard_i2c, bool standard_spi)
 	tegra_setup_kbc();
 #if defined(CONFIG_TEGRA_ODM_BETELGEUSE)	
     tegra_config_pcb_id();    /* TB2 PCB ID */
-//	tegra_configCameraGpio(); /*paul : porting for 9.12.13 */
+	//tegra_configCameraGpio(); /*paul : porting for 9.12.13 */
 #endif
 #if defined(CONFIG_TEGRA_ODM_USB_HUB_INTR)	
 	tegra_config_usb_hub_hotplug();
@@ -2639,31 +2354,6 @@ void __init tegra_setup_nvodm(bool standard_i2c, bool standard_spi)
 		tegra_setup_i2c();
 	if (standard_spi)
 		tegra_setup_spi();
-#if	defined(CONFIG_TOUCHSCREEN_PANJIT_I2C) && \
-	defined(CONFIG_TOUCHSCREEN_ATMEL_MT_T9)
-#define NVODM_ATMEL_TOUCHSCREEN    0x0A00
-#define NVODM_PANJIT_TOUCHSCREEN   0x0000
-#define BOARD_VENTANA              0x024B
-	if (NvOdmPeripheralGetBoardInfo(BOARD_VENTANA, &BoardInfo)) {
-		/* Diagnostics print messages to print Board SKU
-		   printk("\n\nRRC:  Board ID:  %04X\n\n", BoardInfo.SKU);
-		 */
-		switch (BoardInfo.SKU & 0xFF00) {
-		case NVODM_ATMEL_TOUCHSCREEN:
-			ventana_touch_init_atmel();
-			break;
-
-		default:
-			ventana_touch_init_panjit();
-			break;
-		}
-	} else
-		ventana_touch_init_panjit();
-#elif defined(CONFIG_TOUCHSCREEN_ATMEL_MT_T9)
-	ventana_touch_init_atmel();
-#elif defined(CONFIG_TOUCHSCREEN_PANJIT_I2C)
-	ventana_touch_init_panjit();
-#endif
 	tegra_setup_w1();
 	pm_power_off = tegra_system_power_off;
 	tegra_setup_suspend();
@@ -2677,7 +2367,7 @@ void __init tegra_setup_nvodm(bool standard_i2c, bool standard_spi)
 	NvOdmServicesPmuSetVoltage(s_hPmuServices, Ext_SWITCHPmuSupply_CamPwdn, 3300, NULL);
 	register_early_suspend(&CamEarlySuspend);
 #endif
-#ifdef CONFIG_TEGRA_TMON_PROC 
+#ifdef CONFIG_TEGRA_TMON_PROC
 	create_proc_read_entry("tmoninfo", S_IRUGO, NULL, tegra_tmon_read_proc, NULL);
 	create_proc_read_entry("localtmon", S_IRUGO, NULL, tegra_localtmon_read_proc, NULL);
 	create_proc_read_entry("pcbid", S_IRUGO, NULL, tegra_pcbid_read_proc, NULL);
@@ -2701,3 +2391,10 @@ void tegra_board_nvodm_resume(void)
 	if (console_suspend_enabled)
 		tegra_debug_port_resume();
 }
+#if defined(CONFIG_TEGRA_ODM_BETELGEUSE)
+//for, camera device power resume earilier than Late_Resume
+void tegra_board_nvodm_end(void){
+   CamResume(NULL);
+}
+#endif
+

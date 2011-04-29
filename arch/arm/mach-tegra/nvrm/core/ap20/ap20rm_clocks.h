@@ -101,8 +101,7 @@ typedef struct NvRmAp20EmcTimingConfigRec
     NvU32 Emc2xDivisor;
     NvU32 Emc2xUndividedIndex;
     NvRmFreqKHz CpuLimitKHz;
-    NvU32 EmcDigDll;
-} NvRmAp20EmcTimingConfig;
+    } NvRmAp20EmcTimingConfig;
 
 /*****************************************************************************/
 

@@ -420,6 +420,10 @@ static int uvc_v4l2_open(struct file *file)
 	struct uvc_fh *handle;
 	int ret = 0;
 
+#if defined(CONFIG_TEGRA_ODM_BETELGEUSE)
+	mutex_lock(&uvc_driver.camera_open_mutex);
+#endif
+
 	uvc_trace(UVC_TRACE_CALLS, "uvc_v4l2_open\n");
 	mutex_lock(&uvc_driver.open_mutex);
 	stream = video_drvdata(file);
@@ -491,6 +495,9 @@ static int uvc_v4l2_release(struct file *file)
 
 	usb_autopm_put_interface(stream->dev->intf);
 	kref_put(&stream->dev->kref, uvc_delete);
+#if defined(CONFIG_TEGRA_ODM_BETELGEUSE)
+	mutex_unlock(&uvc_driver.camera_open_mutex);
+#endif
 	return 0;
 }
 

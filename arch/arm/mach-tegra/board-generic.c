@@ -417,7 +417,11 @@ static void __init tegra_ventana_init(void)
 	i2c_device_setup();
 	tegra_setup_32khz_clock();
 	tegra_setup_bluesleep();
+
+#ifdef CONFIG_TEGRA_VENTANA_WIFI	
 	ventana_setup_wifi();
+#endif
+	
 }
 
 static void __init tegra_generic_init(void)
@@ -429,6 +433,71 @@ static void __init tegra_generic_init(void)
         register_spi_ipc_devices();
 	tegra_setup_bluesleep_csr();
 }
+
+#ifdef CONFIG_TEGRA_ODM_CARVEOUT_ADJUST
+#define EXPAND_CARVEOUT_SIZE_512MB  (64)
+#define EXPAND_CARVEOUT_SIZE_1GB  (192)
+static char nvodm_command_line[COMMAND_LINE_SIZE];
+static void __init tegra_nvodm_fixup(struct machine_desc *mdesc,
+	struct tag *tags, char **cmdline, struct meminfo *mi)
+{
+	char *p = *cmdline;
+	char *to = &nvodm_command_line[0];
+	unsigned long size,start;
+	unsigned long esize;
+	static unsigned long m_start[2],m_size[2],n_start,n_size;
+	char c = ' ';
+	int len;
+	for (;;) {
+		if (c == ' ') {
+			if (memcmp(p, "mem=", 4) == 0){
+				start = PHYS_OFFSET;
+				size  = memparse(p + 4, &p);
+				if (*p == '@')
+					start = memparse(p + 1, &p);
+				if (start == 0){
+					m_size[0] = size>>20;
+					m_start[0] = 0;
+				}else{
+					m_size[1] = size>>20;
+					m_start[1] = start>>20;
+				}
+			}else if (memcmp(p, "nvmem=", 6) == 0){
+				start = 0;
+				size  = memparse(p + 6, &p);
+				if (*p == '@')
+					start = memparse(p + 1, &p);
+				n_size = size>>20;
+				n_start = start>>20;
+			}else if (memcmp(p, "vmalloc=", 8) == 0){
+				if (m_size[1] == 512){
+					esize = EXPAND_CARVEOUT_SIZE_1GB;
+					len = sprintf(to, "mem=%luM@%luM ", (m_size[0]-esize), m_start[0]);
+					to += len;
+					len = sprintf(to, "mem=%luM@%luM ", m_size[1], m_start[1]);
+					to += len;
+				}else{
+					esize = EXPAND_CARVEOUT_SIZE_512MB;
+					len = sprintf(to, "mem=%luM@%luM ", m_size[0]-esize, m_start[0]);
+					to += len;
+				}
+				len = sprintf(to, "nvmem=%luM@%luM ", n_size + esize, n_start - esize);
+				to += len;
+			}
+		}
+		c = *p++;
+		if (!c)
+			break;
+		if ((p - *cmdline) >= COMMAND_LINE_SIZE)
+			break;
+		*to++ = c;
+	}
+	*to = '\0';
+	printk("original cmdline: %s\n",*cmdline);
+	printk("fixup_cmdline: %s\n",nvodm_command_line);
+	memcpy(*cmdline,nvodm_command_line,sizeof(nvodm_command_line));
+}
+#endif
 
 MACHINE_START(VENTANA, "NVIDIA Ventana Development System")
 	.boot_params  = 0x00000100,
@@ -459,4 +528,7 @@ MACHINE_START(TEGRA_GENERIC, "Tegra 2 Development System")
 	.init_machine   = tegra_generic_init,
 	.map_io         = tegra_map_common_io,
 	.timer          = &tegra_timer,
+#ifdef CONFIG_TEGRA_ODM_CARVEOUT_ADJUST
+	.fixup          = tegra_nvodm_fixup,
+#endif
 MACHINE_END

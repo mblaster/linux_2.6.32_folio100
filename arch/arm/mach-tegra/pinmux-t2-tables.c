@@ -1019,7 +1019,7 @@ void tegra_pinmux_resume(void)
                /* Skip DRAM pads */
                if (i == 0x8c8 || i == 0x8cc || i == 0x8d0 || i == 0x8d4 ||
                    i == 0x8d8 || i == 0x8e4 || i == 0x8e8)
-			continue;
+                      continue;
                pg_writel(*ctx, i);
        }
 }

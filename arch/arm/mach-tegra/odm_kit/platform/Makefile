@@ -8,6 +8,6 @@ obj-$(CONFIG_TEGRA_BATTERY_NVEC)	+= battery/
 obj-$(CONFIG_TEGRA_BATTERY_ODM)		+= battery/
 obj-$(CONFIG_INPUT_TEGRA_ODM_ECOMPASS)     += ecompass/
 obj-$(CONFIG_INPUT_TEGRA_ODM_EC_CIR) 	+= cir/
-obj-$(CONFIG_INPUT_TEGRA_ODM_EC_CIR) 	+= cir/
 obj-$(CONFIG_INPUT_TEGRA_ODM_CAPSENSOR)     += capsensor/
 obj-$(CONFIG_INPUT_TEGRA_ODM_DOCK)     += dock/
+obj-$(CONFIG_INPUT_TEGRA_ODM_OVCURRENT)     += usbovcur/

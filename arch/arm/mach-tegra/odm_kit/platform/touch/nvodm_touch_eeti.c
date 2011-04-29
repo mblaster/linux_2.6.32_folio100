@@ -283,12 +283,12 @@ static void EETI_GpioIsr(void *arg) {
 
     /* Signal the touch thread to read the sample. After it is done reading the
      * sample it should re-enable the interrupt. */
-    NvOdmOsSemaphoreSignal(hTouch->hIntSema);            
+    NvOdmOsSemaphoreSignal(hTouch->hIntSema);	
 }
 
 static NvBool EETI_Suspend(NvOdmTouchDeviceHandle hDevice) {
     NvOdmTouchRawI2cData i2c_data;
-    static const NvS8 eeti_sleep_cmd[] = {0x03, 0x05, 0x0a, 0x03, 0x03, 0x3f, 0x02, 0x00, 0x00, 0x00};
+    static const NvS8 eeti_sleep_cmd[] = {0x03, 0x06, 0x0a, 0x03, 0x36, 0x3f, 0x02, 0x00, 0x00, 0x00};
 
     NvOdmOsMemcpy(i2c_data.datum, eeti_sleep_cmd, 10);
     i2c_data.data_len = 10;
@@ -308,15 +308,17 @@ static NvBool EETI_Resume(NvOdmTouchDeviceHandle hDevice) {
     NvOdmGpioInterruptMask(hTouch->hGpioIntr, NV_TRUE);
     NvOdmGpioInterruptUnregister(hTouch->hGpio, hTouch->hPin, hTouch->hGpioIntr);
 #endif
+
+    NvOdmGpioInterruptMask(hTouch->hGpioIntr, NV_TRUE);
+
     NvOdmGpioConfig(hTouch->hGpio, hTouch->hPin, NvOdmGpioPinMode_Output);
     /* Send reset pulse to touch HW */
-    NvOdmGpioSetState(hTouch->hGpio, hTouch->hPin, 1);
-    NvOsWaitUS(50);
     NvOdmGpioSetState(hTouch->hGpio, hTouch->hPin, 0);
-    NvOsSleepMS(50);       
-    NvOdmGpioSetState(hTouch->hGpio, hTouch->hPin, 1);
-
+    NvOsWaitUS(10);	
     NvOdmGpioConfig(hTouch->hGpio, hTouch->hPin, NvOdmGpioPinMode_InputInterruptLow);
+	
+    NvOdmGpioInterruptMask(hTouch->hGpioIntr, NV_FALSE);
+
 #if 0
     if (NvOdmGpioInterruptRegister(hTouch->hGpio, &hTouch->hGpioIntr,
                                    hTouch->hPin, NvOdmGpioPinMode_InputInterruptLow, EETI_GpioIsr,
@@ -336,8 +338,7 @@ NvBool EETI_ReadCoordinate (NvOdmTouchDeviceHandle hDevice, NvOdmTouchCoordinate
     NVODMTOUCH_PRINTF(("GpioIst+\n"));
 
     EETI_GetSample(hTouch, coord);
-
-
+	
 #if EETI_BENCHMARK_SAMPLE    
     NvOdmOsDebugPrintf("Touch sample time %d\n", NvOdmOsGetTimeMS() - time);
 #endif

@@ -335,13 +335,17 @@ extern void tegra_lp2_startup(void);
 extern NvRmDeviceHandle s_hRmGlobal;
 unsigned int s_AvpWarmbootEntry;
 static void __iomem *pmc = IO_ADDRESS(TEGRA_PMC_BASE);
-
+#if defined(CONFIG_TEGRA_ODM_BETELGEUSE)
+extern int tegra_phys_memsize;
+#endif
 void __init lp0_suspend_init(void)
 {
 	int i;
 	NvBootArgsWarmboot WarmbootArgs;
 	NvRmMemHandle s_hWarmboot = NULL;
-
+#if defined(CONFIG_TEGRA_ODM_BETELGEUSE) 
+  u32 reg_scratch;
+#endif  
 	for (i=0; i<ARRAY_SIZE(scratch); i++) {
 		unsigned int r = 0;
 		int j;
@@ -353,9 +357,26 @@ void __init lp0_suspend_init(void)
 			v <<= scratch[i].fields[j].shift_dst;
 			r |= v;
 		}
+   writel(r, scratch[i].scratch_addr);
+  
+  }
+#if defined(CONFIG_TEGRA_ODM_BETELGEUSE) 
+	if(tegra_phys_memsize<=384){
+	
+		reg_scratch = readl(pmc +PMC_SCRATCH17);
+		reg_scratch &= 0xfffffdff;
+		writel(reg_scratch, pmc + PMC_SCRATCH17);
+	
+		reg_scratch = readl(pmc +PMC_SCRATCH19);
+		reg_scratch &= 0xffefffff;
+		reg_scratch |= 0x80000;
+		writel(reg_scratch, pmc + PMC_SCRATCH19);	
+	}	
 
-		writel(r, scratch[i].scratch_addr);
-	}
+	printk("Memory: %d MB total\n",tegra_phys_memsize);
+	printk("PMC_SCRATCH17 = 0x%08x\n",readl(pmc +PMC_SCRATCH17));
+	printk("PMC_SCRATCH19 = 0x%08x\n",readl(pmc +PMC_SCRATCH19));
+#endif
 
 	NvOsBootArgGet(NvBootArgKey_WarmBoot,
 			&WarmbootArgs, sizeof(NvBootArgsWarmboot));

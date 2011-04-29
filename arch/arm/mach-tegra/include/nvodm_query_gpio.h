@@ -149,7 +149,7 @@ typedef enum
 
     /// Specifies a group for Battery
     NvOdmGpioPinGroup_Battery,
-    
+
     /// Specifies a group for Docking 
     NvOdmGpioPinGroup_Docking,
     

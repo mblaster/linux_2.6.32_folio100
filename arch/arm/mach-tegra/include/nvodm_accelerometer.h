@@ -63,6 +63,7 @@ extern "C"
 #define LSM303DLH_ACC_IOCTL_GETDATA		_IOR(LSM303DLH_ACC_IOCTL_BASE, 8, NvS32[LSM303DLH_ACCSENSOR_DATA_SIZE])
 #define LSM303DLH_ACC_IOCTL_CALIBRATION	_IOW(LSM303DLH_ACC_IOCTL_BASE, 9, int)
 #define LSM303DLH_ACC_IOCTL_RESET_CALIBRATION	_IOW(LSM303DLH_ACC_IOCTL_BASE, 10, int)
+#define LSM303DLH_ACC_IOCTL_CALIBRATION_TOLERANCE_SET	_IOW(LSM303DLH_ACC_IOCTL_BASE, 11, int)
 
 /**
  * @defgroup nvodm_accelerometer Accelerometer Adapation Interface
@@ -437,6 +438,13 @@ lsm303dlh_acc_calibration_write(NvOdmAccelHandle hDevice, NvS32 cal_x, NvS32 cal
 
 NvBool
 lsm303dlh_acc_calibration_read(NvOdmAccelHandle hDevice);
+
+NvBool
+lsm303dlh_acc_calibration_tolerance_set(NvOdmAccelHandle hDevice, NvS32 interval);
+
+void lsm303dlh_acc_DisableIntr(NvOdmAccelHandle    hDevice);
+
+void lsm303dlh_acc_EnableIntr(NvOdmAccelHandle    hDevice);
 
 #if defined(__cplusplus)
 }

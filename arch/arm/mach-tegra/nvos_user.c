@@ -415,13 +415,6 @@ static long nvos_ioctl(struct file *filp,
             NvOsCopyIn( &kernelSem, (void *)arg, sizeof(kernelSem) )
         );
 
-        /* workaround for broken parameter */
-        if (((void*)kernelSem < (void*)0x1000) ||
-	    ((void*)kernelSem > (void*)0xffffffc0)) {
-            e = -EINVAL;
-            goto clean;
-        }
-
         if (IS_ERR_OR_NULL(kernelSem)) {
             e = -EINVAL;
             goto clean;

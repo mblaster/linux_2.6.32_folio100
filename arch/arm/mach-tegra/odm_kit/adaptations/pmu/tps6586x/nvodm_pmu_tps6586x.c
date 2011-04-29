@@ -25,7 +25,7 @@
 #include "nvodm_pmu_tps6586x_adc.h"
 #include "nvodm_pmu_tps6586x_rtc.h"
 #include "pmu_hal.h"
-
+#include "nvos.h"
 /**************************************************************************
  * NOTE:
  *  + Please search "FIXME" and then change the code according to your tps6586x fuse
@@ -1062,6 +1062,11 @@ Tps6586xSetExternalSupply(
                 NvOdmGpioConfig(hPmu->hGpio,
                                 hPmu->hPin[NVODM_EXT_AP_GPIO_RAIL(vddRail)],
                                 NvOdmGpioPinMode_Output);
+                //Daniel 20101012, delay to wait +3VS ready, this delay is caused by EC.
+                if(vddRail == Ext_SWITCHPmuSupply_VSleep) { //20101227, +3VS only.
+                	//NvOdmOsPrintf("+3VS power-on delay 30ms, vddRail=0x%x\n", vddRail); 
+                    NvOsWaitUS(30000); //based on scope wave form, it's 12.5~21ms
+                }
             }
         }
         else
@@ -1242,6 +1247,17 @@ Tps6586xWriteVoltageReg(
                         pSupplyInfo->supply, NV_TRUE);
 
                     status = Tps6586xSetExternalSupply(hDevice, vddRail, NV_TRUE);
+                    /* EDID read will fail if power rail HDMI 5V DDC is not stable
+                     * after enable. After measured from scope, there is required
+                     * at least 500us to make this power rail stable.
+                     */
+                    if (vddRail == Ext_TPS2051BPmuSupply_VDDIO_VID)
+                    {
+                        if (pSettleMicroSeconds)
+                            *pSettleMicroSeconds = 500;
+                        else
+                            NvOdmOsWaitUS(500);
+                    }
                 }
             }
             else
@@ -1476,18 +1492,13 @@ NvBool Tps6586xSetup(NvOdmPmuDeviceHandle hDevice)
         }
         hPmu->DeviceAddr = I2cAddress;
         hPmu->hOdmPmuSevice = NvOdmServicesPmuOpen();
-#if defined(CONFIG_TEGRA_ODM_BETELGEUSE)
-//        if (NV_FALSE == Tps6586xWriteVoltageReg(hDevice, Ext_SWITCHPmuSupply_VSleep, 3300, NULL))
-//            NVODMPMU_PRINTF(("TPS: Fail to set SUSB_SYS# high\n"));
-//        else
-//            NVODMPMU_PRINTF(("TPS: set the SUSB_SYS# to high\n"));
-#else
+#if !defined(CONFIG_TEGRA_ODM_BETELGEUSE)       
         //if (NV_FALSE == Tps6586xWriteVoltageReg(hDevice, TPS6586xPmuSupply_LDO5, 3300, NULL))
         if (NV_FALSE == Tps6586xWriteVoltageReg(hDevice, TPS6586xPmuSupply_LDO5, 2850, NULL))
             NVODMPMU_PRINTF(("TPS: Fail to set the NVDDIO_NAND to 2.85V\n"));
         else
             NVODMPMU_PRINTF(("TPS: set the NVDDIO_NAND to 2.85V\n"));
-#endif
+#endif    
     }
     else
     {

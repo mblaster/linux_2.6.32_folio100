@@ -1,42 +1,21 @@
 /*
+ * arch/arm/mach-tegra/odm_kit/query/harmony/nvodm_query.c
+ *
  * Copyright (c) 2007-2009 NVIDIA Corporation.
- * All rights reserved.
  *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are met:
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
  *
- * Redistributions of source code must retain the above copyright notice,
- * this list of conditions and the following disclaimer.
+ * This program is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
+ * more details.
  *
- * Redistributions in binary form must reproduce the above copyright notice,
- * this list of conditions and the following disclaimer in the documentation
- * and/or other materials provided with the distribution.
- *
- * Neither the name of the NVIDIA Corporation nor the names of its contributors
- * may be used to endorse or promote products derived from this software
- * without specific prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
- * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
- * ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
- * LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
- * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
- * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
- * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
- * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
- * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
- * POSSIBILITY OF SUCH DAMAGE.
- *
- */
-
-/**
- * @file
- * <b>NVIDIA APX ODM Kit:
- *         Implementation of the ODM Query API</b>
- *
- * @b Description: Implements the query functions for ODMs that may be
- *                 accessed at boot-time, runtime, or anywhere in between.
+ * You should have received a copy of the GNU General Public License along
+ * with this program; if not, write to the Free Software Foundation, Inc.,
+ * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
 #include "nvodm_query.h"
@@ -83,10 +62,10 @@ s_NvOdmQueryDownloadTransportSetting = NvOdmDownloadTransport_None;
 
 static const NvOdmQuerySdioInterfaceProperty s_NvOdmQuerySdioInterfaceProperty[4] =
 {
-    { NV_FALSE, 10,  NV_TRUE, 0x8, NvOdmQuerySdioSlotUsage_wlan   },
+    { NV_FALSE, 10,  NV_FALSE, 0x8, NvOdmQuerySdioSlotUsage_wlan   },
     { NV_TRUE,   0, NV_FALSE, 0x5, NvOdmQuerySdioSlotUsage_Media  },
     { NV_TRUE,   0, NV_FALSE, 0x6, NvOdmQuerySdioSlotUsage_unused },
-    { NV_TRUE,  10, NV_TRUE, 0x6,  NvOdmQuerySdioSlotUsage_Boot  }
+    { NV_FALSE,  10, NV_TRUE, 0x6,  NvOdmQuerySdioSlotUsage_Boot  }
 };
 
 static const NvOdmQuerySpiDeviceInfo s_NvOdmQuerySpiDeviceInfoTable [] =
@@ -183,8 +162,8 @@ static const NvOdmSdramControllerConfigAdv s_NvOdmHyS5c1GbEmcConfigTable[] =
 {
     {
                   0x20,   /* Rev 2.0 */
-                166500,   /* SDRAM frquency */
-                   950,   /* EMC core voltage */
+                166000,   /* SDRAM frquency */
+                  1000,   /* EMC core voltage */
                     46,   /* Number of EMC parameters below */
         {
             0x0000000A,   /* RC */
@@ -194,7 +173,7 @@ static const NvOdmSdramControllerConfigAdv s_NvOdmHyS5c1GbEmcConfigTable[] =
             0x00000004,   /* R2W */
             0x00000004,   /* W2R */
             0x00000002,   /* R2P */
-            0x00000008,   /* W2P */
+            0x0000000B,   /* W2P */
             0x00000003,   /* RD_RCD */
             0x00000003,   /* WR_RCD */
             0x00000002,   /* RRD */
@@ -203,7 +182,7 @@ static const NvOdmSdramControllerConfigAdv s_NvOdmHyS5c1GbEmcConfigTable[] =
             0x00000004,   /* QUSE */
             0x00000003,   /* QRST */
             0x00000009,   /* QSAFE */
-            0x0000000D,   /* RDV */
+            0x0000000C,   /* RDV */
             0x000004DF,   /* REFRESH */
             0x00000000,   /* BURST_REFRESH_NUM */
             0x00000003,   /* PDEX2WR */
@@ -214,19 +193,19 @@ static const NvOdmSdramControllerConfigAdv s_NvOdmHyS5c1GbEmcConfigTable[] =
             0x00000009,   /* RW2PDEN */
             0x000000C8,   /* TXSR */
             0x00000003,   /* TCKE */
-            0x00000007,   /* TFAW */
+            0x00000006,   /* TFAW */
             0x00000004,   /* TRPAB */
-            0x00000001,   /* TCLKSTABLE */
+            0x00000008,   /* TCLKSTABLE */
             0x00000002,   /* TCLKSTOP */
             0x00000000,   /* TREFBW */
-            0x00000000,   /* QUSE_EXTRA */
+            0x00000003,   /* QUSE_EXTRA */
             0x00000002,   /* FBIO_CFG6 */
             0x00000000,   /* ODT_WRITE */
             0x00000000,   /* ODT_READ */
             0x00000083,   /* FBIO_CFG5 */
-            0x004C0406,   /* CFG_DIG_DLL */
+            0xA05C04AE,   /* CFG_DIG_DLL */
             0x007FC010,   /* DLL_XFORM_DQS */
-            0x00000017,   /* DLL_XFORM_QUSE */
+            0x0000C10D,   /* DLL_XFORM_QUSE */
             0x00000000,   /* ZCAL_REF_CNT */
             0x00000000,   /* ZCAL_WAIT_CNT */
             0x00000000,   /* AUTO_CAL_INTERVAL */
@@ -246,9 +225,9 @@ static const NvOdmSdramControllerConfigAdv s_NvOdmHyS5c1GbEmcConfigTable[] =
             0x0000000F,   /* RAS */
             0x00000005,   /* RP */
             0x00000004,   /* R2W */
-            0x00000006,   /* W2R */
+            0x00000005,   /* W2R */
             0x00000003,   /* R2P */
-            0x0000000A,   /* W2P */
+            0x0000000B,   /* W2P */
             0x00000005,   /* RD_RCD */
             0x00000005,   /* WR_RCD */
             0x00000003,   /* RRD */
@@ -268,19 +247,19 @@ static const NvOdmSdramControllerConfigAdv s_NvOdmHyS5c1GbEmcConfigTable[] =
             0x0000000E,   /* RW2PDEN */
             0x000000C8,   /* TXSR */
             0x00000003,   /* TCKE */
-            0x0000000D,   /* TFAW */
+            0x0000000C,   /* TFAW */
             0x00000006,   /* TRPAB */
-            0x00000006,   /* TCLKSTABLE */
+            0x00000008,   /* TCLKSTABLE */
             0x00000002,   /* TCLKSTOP */
             0x00000000,   /* TREFBW */
-            0x00000000,   /* QUSE_EXTRA */
+            0x00000003,   /* QUSE_EXTRA */
             0x00000002,   /* FBIO_CFG6 */
             0x00000000,   /* ODT_WRITE */
             0x00000000,   /* ODT_READ */
             0x00000083,   /* FBIO_CFG5 */
-            0xF044048B,   /* CFG_DIG_DLL */
-            0x007FC010,   /* DLL_XFORM_DQS */
-            0x00000017,   /* DLL_XFORM_QUSE */
+            0xE044048B,   /* CFG_DIG_DLL */
+            0x007FB010,   /* DLL_XFORM_DQS */
+            0x00003C14,   /* DLL_XFORM_QUSE */
             0x00000000,   /* ZCAL_REF_CNT */
             0x00000000,   /* ZCAL_WAIT_CNT */
             0x00000000,   /* AUTO_CAL_INTERVAL */
@@ -301,17 +280,13 @@ static NvOdmWakeupPadInfo s_NvOdmWakeupPadInfo[] =
     {NV_FALSE,  4, NvOdmWakeupPadPolarity_High},    // Wake Event  4 - hdmi_int (HDMI_HPD)
     {NV_TRUE,   5, NvOdmWakeupPadPolarity_Low},     // Wake Event  5 - vgp[6] (VI_GP6, Flash_EN2)
     {NV_FALSE,  6, NvOdmWakeupPadPolarity_High},    // Wake Event  6 - gp3_pu[5] (GPS_ON_OFF, GPS_IRQ)
-#ifdef CONFIG_BT_BLUESLEEP
-    {NV_TRUE,  7, NvOdmWakeupPadPolarity_AnyEdge}, // Wake Event  7 - gp3_pu[6] (GPS_INT, BT_IRQ)
-#else
     {NV_FALSE,  7, NvOdmWakeupPadPolarity_AnyEdge}, // Wake Event  7 - gp3_pu[6] (GPS_INT, BT_IRQ)
-#endif
     {NV_FALSE,  8, NvOdmWakeupPadPolarity_AnyEdge}, // Wake Event  8 - gmi_wp_n (MICRO SD_CD)
     {NV_FALSE,  9, NvOdmWakeupPadPolarity_High},    // Wake Event  9 - gp3_ps[2] (KB_COL10)
     {NV_FALSE, 10, NvOdmWakeupPadPolarity_High},    // Wake Event 10 - gmi_ad21 (Accelerometer_TH/TAP)
     {NV_FALSE, 11, NvOdmWakeupPadPolarity_Low},     // Wake Event 11 - spi2_cs2 (PEN_INT, AUDIO-IRQ, LOW_BAT#)
     {NV_FALSE, 12, NvOdmWakeupPadPolarity_Low},     // Wake Event 12 - spi2_cs1 (HEADSET_DET, not used)
-    {NV_TRUE, 13, NvOdmWakeupPadPolarity_Low},     // Wake Event 13 - sdio1_dat1
+    {NV_FALSE, 13, NvOdmWakeupPadPolarity_Low},     // Wake Event 13 - sdio1_dat1
     {NV_FALSE, 14, NvOdmWakeupPadPolarity_High},    // Wake Event 14 - gp3_pv[6] (WLAN_INT)
     {NV_FALSE, 15, NvOdmWakeupPadPolarity_AnyEdge}, // Wake Event 15 - gmi_ad16  (SPI3_DOUT, DTV_SPI4_CS1)
     {NV_FALSE, 16, NvOdmWakeupPadPolarity_High},    // Wake Event 16 - rtc_irq
@@ -531,11 +506,11 @@ const void*
 NvOdmQuerySdramControllerConfigGet(NvU32 *pEntries, NvU32 *pRevision)
 {
 #if NVODM_ENABLE_EMC_DVFS
-    if (pRevision)
-            *pRevision = s_NvOdmHyS5c1GbEmcConfigTable[0].Revision;
-    if (pEntries)
-        *pEntries = NV_ARRAY_SIZE(s_NvOdmHyS5c1GbEmcConfigTable);
-    return (const void*)s_NvOdmHyS5c1GbEmcConfigTable;
+            if (pRevision)
+                *pRevision = s_NvOdmHyS5c1GbEmcConfigTable[0].Revision;
+            if (pEntries)
+                *pEntries = NV_ARRAY_SIZE(s_NvOdmHyS5c1GbEmcConfigTable);
+            return (const void*)s_NvOdmHyS5c1GbEmcConfigTable;
 #endif
     if (pEntries)
         *pEntries = 0;
@@ -729,7 +704,7 @@ NvOdmQueryGetUsbProperty(NvOdmIoModule OdmIoModule,
         20,
         NV_TRUE,
         NvOdmUsbModeType_Device,
-        NvOdmUsbIdPinType_CableId,
+        NvOdmUsbIdPinType_None,
         NvOdmUsbConnectorsMuxType_None,
         NV_TRUE
     };

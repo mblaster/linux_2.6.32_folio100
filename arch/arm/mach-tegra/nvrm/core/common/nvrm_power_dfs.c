@@ -76,7 +76,7 @@
 
 // Options for temperature monitoring
 #define NVRM_DTT_DISABLED (0)
-#define NVRM_DTT_USE_INTERRUPT (0)
+#define NVRM_DTT_USE_INTERRUPT (0) /* paul: roger patch here set 1 */
 #define NVRM_DTT_RANGE_CHANGE_PRINTF (1)
 
 // Allow PMUs with CPU voltage range above chip minimum
@@ -281,7 +281,7 @@ extern NvU32 gTemperatureC ;
 #define DttRangeReport(T, pDtt) \
 do\
 {\
-    NvOsDebugPrintf("DTT: T= %d, Range= %d (%d : %d)\n", \
+    NvOsDebugPrintf("DTT: T = %d, Range = %d (%d : %d)\n", \
         (T), (pDtt)->TcorePolicy.PolicyRange, \
         (pDtt)->TcorePolicy.LowLimit, (pDtt)->TcorePolicy.HighLimit); \
 } while(0)
@@ -938,7 +938,6 @@ static NvError DfsHwInit(NvRmDfs* pDfs)
             }
         }
     }
-
     return error;
 }
 
@@ -2371,16 +2370,10 @@ void NvRmPrivDvsInit(void)
     }
     else if (pDfs->hRm->ChipId.Id == 0x20)
     {
-        pDvs->MinCoreMv = NV_MAX(pDvs->MinCoreMv,
-            NVRM_AP20_RELIABILITY_CORE_MV(pDfs->hRm->ChipId.SKU));
-        NV_ASSERT(pDvs->MinCoreMv <= pDvs->NominalCoreMv);
         pDvs->LowCornerCoreMv = NV_MAX(NVRM_AP20_LOW_CORE_MV, pDvs->MinCoreMv);
         pDvs->LowCornerCoreMv =
             NV_MIN(pDvs->LowCornerCoreMv, pDvs->NominalCoreMv);
 
-        pDvs->MinCpuMv = NV_MAX(pDvs->MinCpuMv,
-            NVRM_AP20_RELIABILITY_CPU_MV(pDfs->hRm->ChipId.SKU));
-        NV_ASSERT(pDvs->MinCpuMv <= pDvs->NominalCpuMv);
         pDvs->LowCornerCpuMv = NV_MAX(NVRM_AP20_LOW_CPU_MV, pDvs->MinCpuMv);
         pDvs->LowCornerCpuMv =
             NV_MIN(pDvs->LowCornerCpuMv, pDvs->NominalCpuMv);
@@ -2695,7 +2688,6 @@ void NvRmPrivDfsSuspend(NvOdmSocPowerState state)
             NvRmMilliVolts v = NV_MAX(pDvs->DvsCorner.SystemMv,
                                       NV_MAX(pDvs->DvsCorner.EmcMv,
                                              pDvs->DvsCorner.ModulesMv));
-            v = NV_MAX(v, pDvs->MinCoreMv);
 
             // If CPU rail returns to default level by PMU underneath DVFS
             // need to synchronize voltage after LP1 same way as after LP2

@@ -18,6 +18,9 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
+#include <linux/kernel.h>  
+#include <linux/spinlock.h>
+#include <linux/proc_fs.h>
 #include "nvodm_tmon_adt7461.h"
 #include "tmon_hal.h"
 #if DEBUG_THERMALSENSOR
@@ -520,7 +523,7 @@ NvBool Adt7461Init(NvOdmTmonDeviceHandle hTmon)
 #if PRE_ER_GMT_THERMALSENSOR
     ExtRange = 0; /* not support ADT thermal sensor*/
 #else
-    ExtRange = ((Data & ADT7461ConfigBits_ExtendedRange) != 0);	
+    ExtRange = ((Data & ADT7461ConfigBits_ExtendedRange) != 0);
 #endif
     // Program shutdown comparators settings
     Data = ADT7461_T_VALUE_TO_DATA(

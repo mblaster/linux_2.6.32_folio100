@@ -128,7 +128,8 @@ static int tegra_rtc_set_alarm(struct device *dev, struct rtc_wkalrm *wkalrm)
 
 	pr_debug("alarm_sec = %u\n", alarm_sec);
 
-	if(!NvOdmPmuWriteAlarm(hPmu, alarm_sec))
+        /* Add "- now" for Fix PMU RTC alarm can not be set Daniel Wang */
+	if(!NvOdmPmuWriteAlarm(hPmu, alarm_sec - now))
 		return -EINVAL;
 
 	return 0;

@@ -37,6 +37,7 @@
 
 #include <nvodm_services.h>
 #include <nvodm_accelerometer.h>
+#include "nvos.h"
 
 #define DRIVER_NAME "lsm303dlh_acc"
 #define READ_BUFFER_LENGTH 20
@@ -94,6 +95,7 @@ static enum {
 /* tell gsensor to stop work */
 static void stop_accel_early_suspend(struct early_suspend *h)
 {
+lsm303dlh_acc_DisableIntr(accel_dev->hOdmAcr);
 	printk("acc_suspend start ...\n");
 	lsm303dlh_acc_disable(accel_dev->hOdmAcr);
 	printk("acc_suspend end ...\n");
@@ -105,6 +107,7 @@ static void start_accel_late_resume(struct early_suspend *h)
 	printk("acc_resume start ...\n");
 	lsm303dlh_acc_enable(accel_dev->hOdmAcr);
 	printk("acc_resume end ...\n");
+lsm303dlh_acc_EnableIntr(accel_dev->hOdmAcr);
 }
 
 static struct early_suspend accel_early_suspend = {
@@ -140,6 +143,7 @@ static int lsm303dlh_acc_misc_ioctl(struct inode *inode, struct file *file,
 	u8 buf[4];
 	int err;
 	NvS32 interval;
+	NvS32 value;
 	NvS32 sData[LSM303DLH_ACCSENSOR_DATA_SIZE];
 	bool rv=true;
 
@@ -227,7 +231,15 @@ static int lsm303dlh_acc_misc_ioctl(struct inode *inode, struct file *file,
 			return -EPERM;
 		}
 		break;
-		
+
+	case LSM303DLH_ACC_IOCTL_CALIBRATION_TOLERANCE_SET:
+		if (copy_from_user(&value, argp, sizeof(value)))
+			return -EFAULT;
+
+		rv = lsm303dlh_acc_calibration_tolerance_set(accel_dev->hOdmAcr, value);
+		if (rv==NV_FALSE) return -EFAULT;
+		break;
+			
 	default:
 		return -EINVAL;
 	}
@@ -268,7 +280,48 @@ NvBool open_def_odm_accl(void)
 	err = NvOdmAccelOpen(&(accel_dev->hOdmAcr));
 	if (!err) {
 		pr_err("open_def_odm_accl: NvOdmAccelOpen failed\n");
+		return err;
 	}
+#if 0 //derick 20100715 not use
+	err = NvOdmAccelSetIntForceThreshold(accel_dev->hOdmAcr,
+		 NvOdmAccelInt_MotionThreshold, 0, 900);
+	if (!err) {
+		pr_err("open_def_odm_accl: Set Motion Thresold failed\n");
+		return err;
+	}
+
+	err = NvOdmAccelSetIntEnable(accel_dev->hOdmAcr,
+		NvOdmAccelInt_MotionThreshold, NvOdmAccelAxis_All, 0, NV_TRUE);
+
+	if (!err) {
+		pr_err("open_def_odm_accl: Enable Motion Thresold failed\n");
+		return err;
+	}
+
+	err = NvOdmAccelSetIntEnable(accel_dev->hOdmAcr,
+		NvOdmAccelInt_TapThreshold, NvOdmAccelAxis_All, 0, NV_TRUE);
+
+	if (!err) {
+		pr_err("open_def_odm_accl: Enable Tap Threshold failed\n");
+		return err;
+	}
+
+	err = NvOdmAccelSetIntForceThreshold(accel_dev->hOdmAcr,
+		NvOdmAccelInt_TapThreshold, 0, 120);
+
+	if (!err) {
+		pr_err("open_def_odm_accl: Set Tap Threshold failed\n");
+		return err;
+	}
+
+	err = NvOdmAccelSetIntTimeThreshold(accel_dev->hOdmAcr,
+		NvOdmAccelInt_TapThreshold, 0, 2);
+
+	if (!err) {
+		pr_err("open_def_odm_accl: SetIntTimeThreshold failed\n");
+		return err;
+	}
+#endif
 	return err;
 }
 #if 0 //sysfs START
@@ -455,7 +508,7 @@ static int tegra_acc_thread(void *pdata)
 		if (accelerometer->show_log) {
 			printk("Accelerometer: x=%d, y=%d, z=%d\n", x, y, z);
 		}
-
+//NvOsDebugPrintf("G-sensor read data.\r\n");
 		input_report_abs(accelerometer->input_dev, ABS_X, x);
 		input_report_abs(accelerometer->input_dev, ABS_Y, y);
 		input_report_abs(accelerometer->input_dev, ABS_Z, z);
@@ -604,8 +657,8 @@ static const struct i2c_device_id lsm303dlh_acc_id[] = {
 static struct platform_driver tegra_acc_driver = {
 	.probe	= tegra_acc_probe,
 	.remove	= tegra_acc_remove,
-	.suspend = tegra_acc_suspend,
-	.resume = tegra_acc_resume,
+//	.suspend = tegra_acc_suspend,
+//	.resume = tegra_acc_resume,
 	.driver	= {
 		.name = "lsm303dlh_acc",
 	},
