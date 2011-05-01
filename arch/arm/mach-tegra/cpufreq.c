@@ -59,6 +59,24 @@ static DEFINE_MUTEX(init_mutex);
 static int disable_hotplug = 0;
 #endif
 
+/*
+ * Frequency table index must be sequential starting at 0 and frequencies
+ * must be ascending.
+ */
+static struct cpufreq_frequency_table freq_table[] = {
+	{ 0, 314000 },
+	{ 1, 456000 },
+	{ 2, 618000 },
+	{ 3, 770000 },
+	{ 4, 816000 },
+	{ 5, 922000 },
+	{ 6, 1000000 },
+	{ 7, 1200000 },
+	{ 8, 1400000 },
+	{ 9, 1504000 },
+	{ 10, CPUFREQ_TABLE_END },
+};
+
 static void tegra_cpufreq_hotplug(NvRmPmRequest req)
 {
 	int rc = 0;
@@ -172,9 +190,7 @@ static int tegra_cpufreq_dfsd(void *arg)
 
 static int tegra_verify_speed(struct cpufreq_policy *policy)
 {
-	cpufreq_verify_within_limits(policy, policy->cpuinfo.min_freq,
-		policy->cpuinfo.max_freq);
-	return 0;
+	return cpufreq_frequency_table_verify(policy, freq_table);
 }
 
 static unsigned int tegra_get_speed(unsigned int cpu)
