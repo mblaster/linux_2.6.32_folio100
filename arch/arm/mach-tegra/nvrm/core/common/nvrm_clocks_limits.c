@@ -58,8 +58,6 @@
 
 // Voltage list for corresponding clocks
 NvU32 FakeShmooVoltages[] = {
-    900, // Original Value: 750
-    900, // Original Value: 825
     900,
     975,
     1050,
@@ -67,16 +65,14 @@ NvU32 FakeShmooVoltages[] = {
     MAX_VOLTAGE // New Entry
 };
 
-NvU32 ClockTableLength = 7; // Original Value: 6
+NvU32 ClockTableLength = 5; // Original Value: 6
 
 NvRmScaledClkLimits FakepScaledCpuLimits = {
     101, // FakepScaledCpuLimits.HwDeviceId
     0, // FakepScaledCpuLimits.SubClockId
     32, // FakepScaledCpuLimits.MinKHz
     // Clock table
-    {314000,
-    456000,
-    618000,
+    {618000,
     770000,
     922000,
     1007000,
