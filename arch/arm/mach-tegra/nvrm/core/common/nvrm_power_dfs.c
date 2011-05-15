@@ -814,6 +814,14 @@ static void DfsParametersInit(NvRmDfs* pDfs)
         pDfs->LowCornerKHz.Domains[i] = pDfs->DfsParameters[i].MinKHz;
         pDfs->HighCornerKHz.Domains[i] = pDfs->DfsParameters[i].MaxKHz;
     }
+    /*
+    *  Set CPU Clock scaling range manually to
+    *  avoid booting up out of specifications
+    *  and to minimize the "sleep of death" bug
+    */
+    pDfs->LowCornerKHz.Domains[NvRmDfsClockId_Cpu] = 650000;
+    pDfs->HighCornerKHz.Domains[NvRmDfsClockId_Cpu] = 1000000;
+
     pDfs->CpuCornersShadow.MinKHz =
         pDfs->LowCornerKHz.Domains[NvRmDfsClockId_Cpu];
     pDfs->CpuCornersShadow.MaxKHz =
