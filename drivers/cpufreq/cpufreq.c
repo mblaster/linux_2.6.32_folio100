@@ -586,6 +586,17 @@ out:
 	return i;
 }
 
+/**
+ * show_scaling_available_frequencies - show the available frequencies
+ */
+static ssize_t show_scaling_available_frequencies(struct cpufreq_policy *policy,
+						char *buf)
+{
+	ssize_t i = 0;
+	i += sprintf(buf, "650000 1000000 1200000 1400000\n");
+	return i;
+}
+
 static ssize_t show_cpus(const struct cpumask *mask, char *buf)
 {
 	ssize_t i = 0;
@@ -664,6 +675,7 @@ define_one_ro(cpuinfo_min_freq);
 define_one_ro(cpuinfo_max_freq);
 define_one_ro(cpuinfo_transition_latency);
 define_one_ro(scaling_available_governors);
+define_one_ro(scaling_available_frequencies);
 define_one_ro(scaling_driver);
 define_one_ro(scaling_cur_freq);
 define_one_ro(related_cpus);
@@ -684,6 +696,7 @@ static struct attribute *default_attrs[] = {
 	&scaling_governor.attr,
 	&scaling_driver.attr,
 	&scaling_available_governors.attr,
+	&scaling_available_frequencies.attr,
 	&scaling_setspeed.attr,
 	NULL
 };
