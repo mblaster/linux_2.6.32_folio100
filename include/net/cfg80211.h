@@ -840,6 +840,80 @@ struct cfg80211_bitrate_mask {
 	u32 maxrate; /* in kbps, 0 == no limit */
 };
 
+#ifdef CONFIG_ATH6KL_OLDKERNEL_COMPAT /* mblaster */
+/**
+ * struct cfg80211_pmksa - PMK Security Association
+ *
+ * This structure is passed to the set/del_pmksa() method for PMKSA
+ * caching.
+ *
+ * @bssid: The AP's BSSID.
+ * @pmkid: The PMK material itself.
+ */
+struct cfg80211_pmksa {
+	u8 *bssid;
+	u8 *pmkid;
+};
+
+/**
+ * struct cfg80211_wowlan_trig_pkt_pattern - packet pattern
+ * @mask: bitmask where to match pattern and where to ignore bytes,
+ *	one bit per byte, in same format as nl80211
+ * @pattern: bytes to match where bitmask is 1
+ * @pattern_len: length of pattern (in bytes)
+ *
+ * Internal note: @mask and @pattern are allocated in one chunk of
+ * memory, free @mask only!
+ */
+struct cfg80211_wowlan_trig_pkt_pattern {
+	u8 *mask, *pattern;
+	int pattern_len;
+};
+
+/**
+ * struct cfg80211_wowlan - Wake on Wireless-LAN support info
+ *
+ * This structure defines the enabled WoWLAN triggers for the device.
+ * @any: wake up on any activity -- special trigger if device continues
+ *	operating as normal during suspend
+ * @disconnect: wake up if getting disconnected
+ * @magic_pkt: wake up on receiving magic packet
+ * @patterns: wake up on receiving packet matching a pattern
+ * @n_patterns: number of patterns
+ * @gtk_rekey_failure: wake up on GTK rekey failure
+ * @eap_identity_req: wake up on EAP identity request packet
+ * @four_way_handshake: wake up on 4-way handshake
+ * @rfkill_release: wake up when rfkill is released
+ */
+struct cfg80211_wowlan {
+	bool any, disconnect, magic_pkt, gtk_rekey_failure,
+	     eap_identity_req, four_way_handshake,
+	     rfkill_release;
+	struct cfg80211_wowlan_trig_pkt_pattern *patterns;
+	int n_patterns;
+};
+
+/**
+ * cfg80211_new_sta - notify userspace about station
+ *
+ * @dev: the netdev
+ * @mac_addr: the station's address
+ * @sinfo: the station information
+ * @gfp: allocation flags
+ */
+void cfg80211_new_sta(struct net_device *dev, const u8 *mac_addr,
+		      struct station_info *sinfo, gfp_t gfp);
+
+/**
+ * cfg80211_del_sta - notify userspace about deletion of a station
+ *
+ * @dev: the netdev
+ * @mac_addr: the station's address
+ * @gfp: allocation flags
+ */
+void cfg80211_del_sta(struct net_device *dev, const u8 *mac_addr, gfp_t gfp);
+#endif /* CONFIG_ATH6KL_OLDKERNEL_COMPAT */
+
 /**
  * struct cfg80211_ops - backend description for wireless configuration
  *
@@ -1049,6 +1123,21 @@ struct cfg80211_ops {
 	int	(*set_wds_peer)(struct wiphy *wiphy, struct net_device *dev,
 				u8 *addr);
 
+#ifdef CONFIG_ATH6KL_OLDKERNEL_COMPAT /* mblaster */
+/*
+ * @set_pmksa: Cache a PMKID for a BSSID. This is mostly useful for fullmac
+ *	devices running firmwares capable of generating the (re) association
+ *	RSN IE. It allows for faster roaming between WPA2 BSSIDs.
+ * @del_pmksa: Delete a cached PMKID.
+ * @flush_pmksa: Flush all cached PMKIDs.
+*/
+	int	(*set_pmksa)(struct wiphy *wiphy, struct net_device *netdev,
+			     struct cfg80211_pmksa *pmksa);
+	int	(*del_pmksa)(struct wiphy *wiphy, struct net_device *netdev,
+			     struct cfg80211_pmksa *pmksa);
+	int	(*flush_pmksa)(struct wiphy *wiphy, struct net_device *netdev);
+#endif /* CONFIG_ATH6KL_OLDKERNEL_COMPAT */
+
 	void	(*rfkill_poll)(struct wiphy *wiphy);
 
 #ifdef CONFIG_NL80211_TESTMODE
@@ -1141,7 +1230,10 @@ struct wiphy {
 	u8 retry_long;
 	u32 frag_threshold;
 	u32 rts_threshold;
-
+#ifdef CONFIG_ATH6KL_OLDKERNEL_COMPAT /* mblaster */
+	char fw_version[ETHTOOL_BUSINFO_LEN];
+	u32 hw_version;
+#endif /* CONFIG_ATH6KL_OLDKERNEL_COMPAT */
 	/* If multiple wiphys are registered and you're handed e.g.
 	 * a regular netdev with assigned ieee80211_ptr, you won't
 	 * know whether it points to a wiphy your driver has registered

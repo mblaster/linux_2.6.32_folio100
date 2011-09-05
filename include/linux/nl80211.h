@@ -1388,4 +1388,18 @@ enum nl80211_key_attributes {
 	NL80211_KEY_MAX = __NL80211_KEY_AFTER_LAST - 1
 };
 
+#ifdef CONFIG_ATH6KL_OLDKERNEL_COMPAT /* mblaster */
+/**
+ * enum nl80211_tx_power_setting - TX power adjustment
+ * @NL80211_TX_POWER_AUTOMATIC: automatically determine transmit power
+ * @NL80211_TX_POWER_LIMITED: limit TX power by the mBm parameter
+ * @NL80211_TX_POWER_FIXED: fix TX power to the mBm parameter
+ */
+enum nl80211_tx_power_setting {
+	NL80211_TX_POWER_AUTOMATIC,
+	NL80211_TX_POWER_LIMITED,
+	NL80211_TX_POWER_FIXED,
+};
+#endif /* CONFIG_ATH6KL_OLDKERNEL_COMPAT */
+
 #endif /* __LINUX_NL80211_H */
