@@ -1,7 +1,7 @@
 #
 # Automatically generated make config: don't edit
 # Linux kernel version: 2.6.32.9
-# Mon Sep  5 09:27:55 2011
+# Mon Sep  5 17:13:02 2011
 #
 CONFIG_ARM=y
 CONFIG_SYS_SUPPORTS_APM_EMULATION=y
@@ -692,6 +692,7 @@ CONFIG_ATH_COMMON=m
 # CONFIG_AR9170_USB is not set
 CONFIG_ATH6KL=m
 # CONFIG_ATH6KL_DEBUG is not set
+CONFIG_ATH6KL_OLDKERNEL_COMPAT=y
 # CONFIG_HOSTAP is not set
 # CONFIG_B43 is not set
 # CONFIG_B43LEGACY is not set

@@ -13,6 +13,9 @@
 #include <linux/mmc/card.h>
 #include <linux/mmc/sdio.h>
 #include <linux/mmc/sdio_func.h>
+#ifdef CONFIG_ATH6KL_OLDKERNEL_COMPAT /* mblaster */
+#include <linux/mmc/pm.h>
+#endif /* CONFIG_ATH6KL_OLDKERNEL_COMPAT */
 
 #include "sdio_ops.h"
 

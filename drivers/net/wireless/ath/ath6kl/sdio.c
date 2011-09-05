@@ -21,6 +21,9 @@
 #include <linux/mmc/sdio_ids.h>
 #include <linux/mmc/sdio.h>
 #include <linux/mmc/sd.h>
+#ifdef CONFIG_ATH6KL_OLDKERNEL_COMPAT /* mblaster */
+#include <linux/mmc/pm.h>
+#endif /* CONFIG_ATH6KL_OLDKERNEL_COMPAT */
 #include "htc_hif.h"
 #include "hif-ops.h"
 #include "target.h"
@@ -57,6 +60,35 @@ struct ath6kl_sdio {
 #define CMD53_ARG_BLOCK_BASIS   1
 #define CMD53_ARG_FIXED_ADDRESS 0
 #define CMD53_ARG_INCR_ADDRESS  1
+
+#ifdef CONFIG_ATH6KL_OLDKERNEL_COMPAT /* mblaster */
+mmc_pm_flag_t sdio_get_host_pm_caps(struct sdio_func *func)
+{
+	BUG_ON(!func);
+	BUG_ON(!func->card);
+
+	return func->card->host->pm_caps;
+}
+EXPORT_SYMBOL_GPL(sdio_get_host_pm_caps);
+
+int sdio_set_host_pm_flags(struct sdio_func *func, mmc_pm_flag_t flags)
+{
+	struct mmc_host *host;
+
+	BUG_ON(!func);
+	BUG_ON(!func->card);
+
+	host = func->card->host;
+
+	if (flags & ~host->pm_caps)
+		return -EINVAL;
+
+	/* function suspend methods are serialized, hence no lock needed */
+	host->pm_flags |= flags;
+	return 0;
+}
+EXPORT_SYMBOL_GPL(sdio_set_host_pm_flags);
+#endif /* CONFIG_ATH6KL_OLDKERNEL_COMPAT */
 
 static inline struct ath6kl_sdio *ath6kl_sdio_priv(struct ath6kl *ar)
 {
@@ -660,6 +692,15 @@ static int ath6kl_sdio_enable_scatter(struct ath6kl *ar)
 	int ret;
 	bool virt_scat = false;
 
+#ifdef CONFIG_ATH6KL_OLDKERNEL_COMPAT /* mblaster */
+	/* check if host supports scatter and it meets our requirements */
+	if (ar_sdio->func->card->host->max_hw_segs < MAX_SCATTER_ENTRIES_PER_REQ) {
+		ath6kl_err("host only supports scatter of :%d entries, need: %d\n",
+			   ar_sdio->func->card->host->max_hw_segs,
+			   MAX_SCATTER_ENTRIES_PER_REQ);
+		virt_scat = true;
+	}
+#else
 	/* check if host supports scatter and it meets our requirements */
 	if (ar_sdio->func->card->host->max_segs < MAX_SCATTER_ENTRIES_PER_REQ) {
 		ath6kl_err("host only supports scatter of :%d entries, need: %d\n",
@@ -667,6 +708,7 @@ static int ath6kl_sdio_enable_scatter(struct ath6kl *ar)
 			   MAX_SCATTER_ENTRIES_PER_REQ);
 		virt_scat = true;
 	}
+#endif /* CONFIG_ATH6KL_OLDKERNEL_COMPAT */
 
 	if (!virt_scat) {
 		ret = ath6kl_sdio_alloc_prep_scat_req(ar_sdio,

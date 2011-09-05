@@ -21,6 +21,9 @@
 #include <linux/rtnetlink.h>
 #include <linux/firmware.h>
 #include <linux/sched.h>
+#ifdef CONFIG_ATH6KL_OLDKERNEL_COMPAT /* mblaster */
+#include <linux/ieee80211.h>
+#endif /* CONFIG_ATH6KL_OLDKERNEL_COMPAT */
 #include <net/cfg80211.h>
 #include "htc.h"
 #include "wmi.h"

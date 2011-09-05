@@ -19,6 +19,11 @@
 
 #include "htc_hif.h"
 
+#ifdef CONFIG_ATH6KL_OLDKERNEL_COMPAT /* mblaster */
+#define __round_mask(x, y) ((__typeof__(x))((y)-1))
+#define round_down(x, y) ((x) & ~__round_mask(x, y))
+#endif /* CONFIG_ATH6KL_OLDKERNEL_COMPAT */
+
 enum ATH6K_DEBUG_MASK {
 	ATH6KL_DBG_WLAN_CONNECT = BIT(0),     /* wlan connect */
 	ATH6KL_DBG_WLAN_SCAN    = BIT(1),     /* wlan scan */
