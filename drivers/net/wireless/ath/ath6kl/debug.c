@@ -18,20 +18,12 @@
 #include "debug.h"
 
 #ifdef CONFIG_ATH6KL_OLDKERNEL_COMPAT /* mblaster */
-int ath6kl_printk(const char *level, const char *fmt, ...)
-{
-	va_list args;
-	int rtn;
+struct va_format {
+	const char *fmt;
+	va_list *va;
+};
+#endif /* CONFIG_ATH6KL_OLDKERNEL_COMPAT */
 
-	va_start(args, fmt);
-
-	rtn = printk("%sath6kl: %pV", level, &args);
-
-	va_end(args);
-
-	return rtn;
-}
-#else
 int ath6kl_printk(const char *level, const char *fmt, ...)
 {
 	struct va_format vaf;
@@ -49,7 +41,6 @@ int ath6kl_printk(const char *level, const char *fmt, ...)
 
 	return rtn;
 }
-#endif /* CONFIG_ATH6KL_OLDKERNEL_COMPAT */
 
 #ifdef CONFIG_ATH6KL_DEBUG
 void ath6kl_dump_registers(struct ath6kl_device *dev,
