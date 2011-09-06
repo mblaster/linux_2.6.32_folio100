@@ -677,3 +677,24 @@ void cfg80211_mlme_down(struct cfg80211_registered_device *rdev,
 		}
 	}
 }
+
+#ifdef CONFIG_ATH6KL_OLDKERNEL_COMPAT /* mblaster */
+void cfg80211_new_sta(struct net_device *dev, const u8 *mac_addr,
+			struct station_info *sinfo, gfp_t gfp)
+{
+	struct wiphy *wiphy = dev->ieee80211_ptr->wiphy;
+	struct cfg80211_registered_device *rdev = wiphy_to_dev(wiphy);
+
+	nl80211_send_sta_event(rdev, dev, mac_addr, sinfo, gfp);
+}
+EXPORT_SYMBOL(cfg80211_new_sta);
+
+void cfg80211_del_sta(struct net_device *dev, const u8 *mac_addr, gfp_t gfp)
+{
+	struct wiphy *wiphy = dev->ieee80211_ptr->wiphy;
+	struct cfg80211_registered_device *rdev = wiphy_to_dev(wiphy);
+
+	nl80211_send_sta_del_event(rdev, dev, mac_addr, gfp);
+}
+EXPORT_SYMBOL(cfg80211_del_sta);
+#endif /* CONFIG_ATH6KL_OLDKERNEL_COMPAT */

@@ -115,6 +115,7 @@
 #define IEEE80211_MAX_SSID_LEN		32
 
 #define IEEE80211_MAX_MESH_ID_LEN	32
+#define IEEE80211_MESH_CONFIG_LEN	24
 
 #define IEEE80211_QOS_CTL_LEN		2
 /* 1d tag mask */
@@ -1187,7 +1188,9 @@ enum ieee80211_eid {
 	WLAN_EID_TS_DELAY = 43,
 	WLAN_EID_TCLAS_PROCESSING = 44,
 	WLAN_EID_QOS_CAPA = 46,
+
 	/* 802.11s */
+	WLAN_EID_PEER_LINK = 55,
 	WLAN_EID_MESH_CONFIG = 113,
 	WLAN_EID_MESH_ID = 114,
 	WLAN_EID_LINK_METRIC_REPORT = 115,
@@ -1440,6 +1443,7 @@ enum ieee80211_back_actioncode {
 enum ieee80211_back_parties {
 	WLAN_BACK_RECIPIENT = 0,
 	WLAN_BACK_INITIATOR = 1,
+	WLAN_BACK_TIMER = 2,
 };
 
 /* SA Query action */
@@ -1448,6 +1452,9 @@ enum ieee80211_sa_query_action {
 	WLAN_ACTION_SA_QUERY_RESPONSE = 1,
 };
 
+
+/* A-MSDU 802.11n */
+#define IEEE80211_QOS_CONTROL_A_MSDU_PRESENT 0x0080
 
 /* cipher suite selectors */
 #define WLAN_CIPHER_SUITE_USE_GROUP	0x000FAC00
