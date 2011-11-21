@@ -66,7 +66,8 @@ struct input_absinfo {
 #define EVIOCGNAME(len)		_IOC(_IOC_READ, 'E', 0x06, len)		/* get device name */
 #define EVIOCGPHYS(len)		_IOC(_IOC_READ, 'E', 0x07, len)		/* get physical location */
 #define EVIOCGUNIQ(len)		_IOC(_IOC_READ, 'E', 0x08, len)		/* get unique identifier */
-
+#define EVIOCGPROP(len)		_IOC(_IOC_READ, 'E', 0x09, len)		/* get device properties */
+               
 #define EVIOCGKEY(len)		_IOC(_IOC_READ, 'E', 0x18, len)		/* get global keystate */
 #define EVIOCGLED(len)		_IOC(_IOC_READ, 'E', 0x19, len)		/* get all LEDs */
 #define EVIOCGSND(len)		_IOC(_IOC_READ, 'E', 0x1a, len)		/* get all sounds status */
@@ -81,6 +82,18 @@ struct input_absinfo {
 #define EVIOCGEFFECTS		_IOR('E', 0x84, int)			/* Report number of effects playable at the same time */
 
 #define EVIOCGRAB		_IOW('E', 0x90, int)			/* Grab/Release device */
+
+/*
+* Device properties and quirks
+*/
+
+#define INPUT_PROP_POINTER    0x00  /* needs a pointer */
+#define INPUT_PROP_DIRECT    0x01  /* direct input devices */
+#define INPUT_PROP_BUTTONPAD    0x02  /* has button(s) under pad */
+#define INPUT_PROP_SEMI_MT    0x03  /* touch rectangle only */
+
+#define INPUT_PROP_MAX      0x1f
+#define INPUT_PROP_CNT      (INPUT_PROP_MAX + 1)
 
 /*
  * Event types
@@ -648,6 +661,7 @@ struct input_absinfo {
 #define ABS_VOLUME		0x20
 #define ABS_MISC		0x28
 
+#define ABS_MT_SLOT		0x2f	/* MT slot being modified */
 #define ABS_MT_TOUCH_MAJOR	0x30	/* Major axis of touching ellipse */
 #define ABS_MT_TOUCH_MINOR	0x31	/* Minor axis (omit if circular) */
 #define ABS_MT_WIDTH_MAJOR	0x32	/* Major axis of approaching ellipse */
@@ -658,6 +672,14 @@ struct input_absinfo {
 #define ABS_MT_TOOL_TYPE	0x37	/* Type of touching device */
 #define ABS_MT_BLOB_ID		0x38	/* Group a set of packets as a blob */
 #define ABS_MT_TRACKING_ID	0x39	/* Unique ID of initiated contact */
+#define ABS_MT_PRESSURE    0x3a  /* Pressure on contact area */
+#define ABS_MT_DISTANCE    0x3b  /* Contact hover distance */
+
+#ifdef __KERNEL__
+/* Implementation details, userspace should not care about these */
+#define ABS_MT_FIRST    ABS_MT_TOUCH_MAJOR
+#define ABS_MT_LAST    ABS_MT_DISTANCE
+#endif
 
 #define ABS_MAX			0x3f
 #define ABS_CNT			(ABS_MAX+1)
@@ -1075,6 +1097,8 @@ struct input_dev {
 	const char *uniq;
 	struct input_id id;
 
+	unsigned long propbit[BITS_TO_LONGS(INPUT_PROP_CNT)] ;
+	
 	unsigned long evbit[BITS_TO_LONGS(EV_CNT)];
 	unsigned long keybit[BITS_TO_LONGS(KEY_CNT)];
 	unsigned long relbit[BITS_TO_LONGS(REL_CNT)];
@@ -1101,6 +1125,10 @@ struct input_dev {
 	int abs[ABS_MAX + 1];
 	int rep[REP_MAX + 1];
 
+	struct input_mt_slot *mt;
+	int mtsize ;
+	int slot ;
+	
 	unsigned long key[BITS_TO_LONGS(KEY_CNT)];
 	unsigned long led[BITS_TO_LONGS(LED_CNT)];
 	unsigned long snd[BITS_TO_LONGS(SND_CNT)];
