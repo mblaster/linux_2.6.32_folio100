@@ -581,7 +581,7 @@ static int tegra_touch_thread(void *pdata) {
 				input_report_abs(touch->input_dev,
 					ABS_MT_POSITION_Y, y[i]);
 				input_report_abs(touch->input_dev, ABS_MT_PRESSURE, Pressure[i]*255 ) ;
-				printk("reporting (X,Y,PRESSURE) == (%d,%d,%d)\n", x[i], y[i], Pressure[i] ) ;
+//				printk("reporting (X,Y,PRESSURE) == (%d,%d,%d)\n", x[i], y[i], Pressure[i] ) ;
 
 //				input_mt_sync(touch->input_dev);
                 }
